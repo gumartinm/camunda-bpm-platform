@@ -12,9 +12,6 @@
  */
 package org.camunda.bpm.engine.impl.batch;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.camunda.bpm.engine.impl.interceptor.CommandContext;
 import org.camunda.bpm.engine.impl.jobexecutor.JobHandler;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
@@ -38,11 +35,9 @@ public class BatchSeedJobHandler implements JobHandler {
     // TODO: null check?
     BatchEntity batch = commandContext.getBatchManager().findBatchById(configuration);
 
-    // TODO: move to process engine configuration
-    Map<String, BatchHandler<?>> batchRegistry = new HashMap<String, BatchHandler<?>>();
-
-    BatchHandler<?> batchHandler = batchRegistry.get(batch.getType());
-
+    BatchHandler<?> batchHandler = commandContext
+        .getProcessEngineConfiguration()
+        .getBatchHandler(batch.getType());
 
     // TODO: move to process engine configuration
     int numJobsPerSeedInvocation = 10;

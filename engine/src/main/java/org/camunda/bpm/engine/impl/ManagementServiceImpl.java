@@ -21,6 +21,7 @@ import java.util.Set;
 import org.camunda.bpm.application.ProcessApplicationReference;
 import org.camunda.bpm.application.ProcessApplicationRegistration;
 import org.camunda.bpm.engine.ManagementService;
+import org.camunda.bpm.engine.impl.batch.DeleteBatchCmd;
 import org.camunda.bpm.engine.impl.cmd.ActivateJobCmd;
 import org.camunda.bpm.engine.impl.cmd.ActivateJobDefinitionCmd;
 import org.camunda.bpm.engine.impl.cmd.DeleteJobCmd;
@@ -338,6 +339,11 @@ public class ManagementServiceImpl extends ServiceImpl implements ManagementServ
 
   public void clearOverridingJobPriorityForJobDefinition(String jobDefinitionId) {
     commandExecutor.execute(new SetJobDefinitionPriorityCmd(jobDefinitionId, null, false));
+  }
+
+  public void deleteBatch(String batchId) {
+    commandExecutor.execute(new DeleteBatchCmd(batchId));
+
   }
 
 

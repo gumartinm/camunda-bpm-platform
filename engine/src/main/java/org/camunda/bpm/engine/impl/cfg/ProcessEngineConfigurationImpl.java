@@ -78,6 +78,8 @@ import org.camunda.bpm.engine.impl.RuntimeServiceImpl;
 import org.camunda.bpm.engine.impl.ServiceImpl;
 import org.camunda.bpm.engine.impl.TaskServiceImpl;
 import org.camunda.bpm.engine.impl.application.ProcessApplicationManager;
+import org.camunda.bpm.engine.impl.batch.BatchHandler;
+import org.camunda.bpm.engine.impl.batch.BatchSeedJobHandler;
 import org.camunda.bpm.engine.impl.bpmn.deployer.BpmnDeployer;
 import org.camunda.bpm.engine.impl.bpmn.parser.BpmnParseListener;
 import org.camunda.bpm.engine.impl.bpmn.parser.BpmnParser;
@@ -202,6 +204,7 @@ import org.camunda.bpm.engine.impl.migration.validation.instruction.OnlyOnceMapp
 import org.camunda.bpm.engine.impl.migration.validation.instruction.SameEventScopeInstructionValidator;
 import org.camunda.bpm.engine.impl.migration.validation.instruction.SameTypeInstructionValidator;
 import org.camunda.bpm.engine.impl.migration.validation.instruction.SupportedActivitiesInstructionValidator;
+import org.camunda.bpm.engine.impl.migration.MigrationBatchHandler;
 import org.camunda.bpm.engine.impl.persistence.GenericManagerFactory;
 import org.camunda.bpm.engine.impl.persistence.deploy.Deployer;
 import org.camunda.bpm.engine.impl.persistence.deploy.DeploymentCache;
@@ -373,6 +376,10 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
   protected Map<String, IncidentHandler> incidentHandlers;
   protected List<IncidentHandler> customIncidentHandlers;
 
+  // BATCH ////////////////////////////////////////////////////////////////////
+
+  protected Map<String, BatchHandler<?>> batchHandlers;
+  // TODO: add list for custom handlers
 
   // OTHER ////////////////////////////////////////////////////////////////////
   protected List<FormEngine> customFormEngines;
@@ -591,6 +598,7 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
     initIdGenerator();
     initDeployers();
     initJobProvider();
+    initBatchHandlers();
     initJobExecutor();
     initDataSource();
     initTransactionFactory();
@@ -662,6 +670,17 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
       for (IncidentHandler incidentHandler : customIncidentHandlers) {
         incidentHandlers.put(incidentHandler.getIncidentHandlerType(), incidentHandler);
       }
+    }
+  }
+
+  // batch ///////////////////////////////////////////////////////////////////////
+
+  protected void initBatchHandlers() {
+    if (batchHandlers == null) {
+      batchHandlers = new HashMap<String, BatchHandler<?>>();
+
+      MigrationBatchHandler migrationHandler = new MigrationBatchHandler();
+      batchHandlers.put(migrationHandler.getType(), migrationHandler);
     }
   }
 
@@ -1286,6 +1305,13 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
 
     TimerActivateJobDefinitionHandler activateJobDefinitionHandler = new TimerActivateJobDefinitionHandler();
     jobHandlers.put(activateJobDefinitionHandler.getType(), activateJobDefinitionHandler);
+
+    BatchSeedJobHandler batchSeedJobHandler = new BatchSeedJobHandler();
+    jobHandlers.put(batchSeedJobHandler.getType(), batchSeedJobHandler);
+
+    for (JobHandler batchHandler : batchHandlers.values()) {
+      jobHandlers.put(batchHandler.getType(), batchHandler);
+    }
 
     // if we have custom job handlers, register them
     if (getCustomJobHandlers()!=null) {
@@ -2594,6 +2620,18 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
 
   public void setCustomIncidentHandlers(List<IncidentHandler> customIncidentHandlers) {
     this.customIncidentHandlers = customIncidentHandlers;
+  }
+
+  public Map<String, BatchHandler<?>> getBatchHandlers() {
+    return batchHandlers;
+  }
+
+  public BatchHandler<?> getBatchHandler(String type) {
+    return batchHandlers.get(type);
+  }
+
+  public void setBatchHandlers(Map<String, BatchHandler<?>> batchHandlers) {
+    this.batchHandlers = batchHandlers;
   }
 
   public SessionFactory getIdentityProviderSessionFactory() {

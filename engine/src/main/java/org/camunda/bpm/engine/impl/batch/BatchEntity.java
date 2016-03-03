@@ -13,9 +13,12 @@
 package org.camunda.bpm.engine.impl.batch;
 
 import java.util.HashMap;
+import java.util.List;
 
 import org.camunda.bpm.engine.batch.Batch;
+import org.camunda.bpm.engine.impl.context.Context;
 import org.camunda.bpm.engine.impl.db.DbEntity;
+import org.camunda.bpm.engine.impl.db.HasDbRevision;
 import org.camunda.bpm.engine.impl.persistence.entity.JobEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.Nameable;
 import org.camunda.bpm.engine.impl.persistence.entity.util.ByteArrayField;
@@ -24,7 +27,7 @@ import org.camunda.bpm.engine.impl.persistence.entity.util.ByteArrayField;
  * @author Thorben Lindhauer
  *
  */
-public class BatchEntity implements Batch, DbEntity, Nameable {
+public class BatchEntity implements Batch, DbEntity, Nameable, HasDbRevision {
 
   public static final BatchSeedJobDeclaration BATCH_JOB_DECLARATION = new BatchSeedJobDeclaration();
 
@@ -32,11 +35,9 @@ public class BatchEntity implements Batch, DbEntity, Nameable {
   protected String id;
   protected String type;
   protected int size;
+  protected int revision;
 
   protected ByteArrayField configuration = new ByteArrayField(this);
-
-  // transient
-  protected BatchHandler<?> handler;
 
   public String getId() {
     return id;
@@ -93,6 +94,34 @@ public class BatchEntity implements Batch, DbEntity, Nameable {
 
   public JobEntity createSeedJob() {
     return BATCH_JOB_DECLARATION.createJobInstance(this);
+  }
+
+  public void deleteSeedJob() {
+    List<JobEntity> seedJobs = Context.getCommandContext()
+      .getJobManager()
+      .findJobsByConfiguration(BatchSeedJobHandler.TYPE, id, null);
+
+    if (!seedJobs.isEmpty()) {
+      for (JobEntity job : seedJobs) {
+        job.delete();
+      }
+    }
+  }
+
+  @Override
+  public void setRevision(int revision) {
+    this.revision = revision;
+
+  }
+
+  @Override
+  public int getRevision() {
+    return revision;
+  }
+
+  @Override
+  public int getRevisionNext() {
+    return revision + 1;
   }
 
 }

@@ -28,4 +28,6 @@ public interface BatchHandler<T> extends JobHandler {
    * Returns true if more jobs need to be created to complete the batch
    */
   boolean createJobs(BatchEntity batch, int numJobsPerSeedInvocation, int numInvocationsPerJobs);
+
+  void deleteJobs(BatchEntity batch);
 }

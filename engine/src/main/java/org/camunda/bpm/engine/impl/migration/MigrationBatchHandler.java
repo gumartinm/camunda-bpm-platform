@@ -43,7 +43,7 @@ public class MigrationBatchHandler implements BatchHandler<MigrationBatchConfigu
 
   public static final MigrationBatchJobDeclaration JOB_DECLARATION = new MigrationBatchJobDeclaration();
 
-  // TODO: JSON
+  // TODO: serialization JSON
 
   @Override
   public byte[] writeConfiguration(MigrationBatchConfiguration configuration) {
@@ -99,12 +99,12 @@ public class MigrationBatchHandler implements BatchHandler<MigrationBatchConfigu
 
       List<String> idsForJob = new ArrayList<String>();
       for (int i = 0; i < numInstancesForJob; i++) {
-        idsForJob.add(idsForJob.remove(0));
+        idsForJob.add(unprocessedProcessInstanceIds.remove(0));
       }
 
       MigrationBatchConfiguration configurationForJob = new MigrationBatchConfiguration();
-      configuration.setMigrationPlan(configuration.getMigrationPlan());
-      configuration.setProcessInstanceIds(idsForJob);
+      configurationForJob.setMigrationPlan(configuration.getMigrationPlan());
+      configurationForJob.setProcessInstanceIds(idsForJob);
 
       ByteArrayEntity configurationEntity = new ByteArrayEntity();
       configurationEntity.setBytes(writeConfiguration(configurationForJob));
@@ -120,15 +120,33 @@ public class MigrationBatchHandler implements BatchHandler<MigrationBatchConfigu
   }
 
   @Override
+  public void deleteJobs(BatchEntity batch) {
+    // TODO: this should probably not fetch all the jobs
+    // TODO: how do we identify which jobs belong to the given batch?
+    List<JobEntity> jobs = Context.getCommandContext()
+      .getJobManager()
+      .findJobsByConfiguration(TYPE, batch.getId(), null);
+
+    for (JobEntity job : jobs) {
+      Context.getCommandContext()
+        .getByteArrayManager()
+        .deleteByteArrayById(job.getJobHandlerConfiguration());
+
+      job.delete();
+    }
+
+  }
+
+  @Override
   public String getType() {
     return TYPE;
   }
 
   @Override
-  public void execute(String batchId, ExecutionEntity execution, CommandContext commandContext, String tenantId) {
-    BatchEntity batch = commandContext.getBatchManager().findBatchById(batchId);
+  public void execute(String configuration, ExecutionEntity execution, CommandContext commandContext, String tenantId) {
+    ByteArrayEntity configurationEntity = commandContext.getDbEntityManager().selectById(ByteArrayEntity.class, configuration);
 
-    MigrationBatchConfiguration batchConfiguration = readConfiguration(batch.getConfigurationBytes());
+    MigrationBatchConfiguration batchConfiguration = readConfiguration(configurationEntity.getBytes());
     commandContext
       .getProcessEngineConfiguration()
       .getRuntimeService()

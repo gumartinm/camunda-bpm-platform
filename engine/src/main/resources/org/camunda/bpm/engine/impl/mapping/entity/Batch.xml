@@ -30,6 +30,11 @@
   <delete id="deleteBatch" parameterType="org.camunda.bpm.engine.impl.batch.BatchEntity">
     delete from ${prefix}ACT_RU_BATCH where ID_ = #{id} and REV_ = #{revision}
   </delete>
+  
+  <!-- SELECT -->
+  <select id="selectBatch" parameterType="string" resultMap="batchResultMap">
+    select * from ${prefix}ACT_RU_BATCH where ID_ = #{id}
+  </select>
 
   <!-- RESULTMAP -->
 
