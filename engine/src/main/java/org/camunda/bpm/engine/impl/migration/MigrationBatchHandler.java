@@ -16,6 +16,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -86,7 +87,7 @@ public class MigrationBatchHandler implements BatchHandler<MigrationBatchConfigu
 
   @Override
   public boolean createJobs(BatchEntity batch, int numJobsPerSeedInvocation, int numInvocationsPerJobs) {
-    MigrationBatchConfiguration configuration = readConfiguration(batch.getConfiguration());
+    MigrationBatchConfiguration configuration = readConfiguration(batch.getConfigurationBytes());
 
     List<String> unprocessedProcessInstanceIds = configuration.getProcessInstanceIds();
     List<JobEntity> jobsCreated = new ArrayList<JobEntity>();
@@ -127,14 +128,16 @@ public class MigrationBatchHandler implements BatchHandler<MigrationBatchConfigu
   public void execute(String batchId, ExecutionEntity execution, CommandContext commandContext, String tenantId) {
     BatchEntity batch = commandContext.getBatchManager().findBatchById(batchId);
 
-    MigrationBatchConfiguration batchConfiguration = readConfiguration(batch.getConfiguration());
+    MigrationBatchConfiguration batchConfiguration = readConfiguration(batch.getConfigurationBytes());
     commandContext
       .getProcessEngineConfiguration()
       .getRuntimeService()
       .executeMigrationPlan(batchConfiguration.getMigrationPlan(), batchConfiguration.getProcessInstanceIds());
   }
 
-  public static class MigrationBatchConfiguration {
+  public static class MigrationBatchConfiguration implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     protected List<String> processInstanceIds;
     protected MigrationPlan migrationPlan;

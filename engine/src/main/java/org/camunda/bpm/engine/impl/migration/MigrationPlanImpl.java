@@ -12,6 +12,7 @@
  */
 package org.camunda.bpm.engine.impl.migration;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,7 +23,9 @@ import org.camunda.bpm.engine.migration.MigrationPlan;
  * @author Thorben Lindhauer
  *
  */
-public class MigrationPlanImpl implements MigrationPlan {
+public class MigrationPlanImpl implements MigrationPlan, Serializable {
+
+  private static final long serialVersionUID = 1L;
 
   protected String sourceProcessDefinitionId;
   protected String targetProcessDefinitionId;

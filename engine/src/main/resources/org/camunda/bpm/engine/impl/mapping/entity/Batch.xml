@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?> 
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd"> 
+  
+<mapper namespace="org.camunda.bpm.engine.impl.batch.BatchEntity">
+
+  <!-- INSERT -->
+
+  <insert id="insertBatch" parameterType="org.camunda.bpm.engine.impl.batch.BatchEntity">
+    insert into ${prefix}ACT_RU_BATCH
+    (
+      ID_,
+      TYPE_,
+      SIZE_,
+      CONFIGURATION_,
+      REV_
+    )
+    values
+    (
+      #{id ,jdbcType=VARCHAR},
+      #{type, jdbcType=VARCHAR},
+      #{size, jdbcType=INTEGER},
+      #{configuration ,jdbcType=VARCHAR},
+      1
+    )
+  </insert>
+  
+  <!-- DELETE -->
+
+  <delete id="deleteBatch" parameterType="org.camunda.bpm.engine.impl.batch.BatchEntity">
+    delete from ${prefix}ACT_RU_BATCH where ID_ = #{id} and REV_ = #{revision}
+  </delete>
+
+  <!-- RESULTMAP -->
+
+  <resultMap id="batchResultMap" type="org.camunda.bpm.engine.impl.batch.BatchEntity">
+    <id property="id" column="ID_" jdbcType="VARCHAR" />
+    <result property="revision" column="REV_" jdbcType="INTEGER" />
+    <result property="type" column="TYPE_" jdbcType="VARCHAR" />
+    <result property="size" column="SIZE_" jdbcType="INTEGER" />
+    <result property="configuration" column="CONFIGURATION_" jdbcType="VARCHAR" />
+  </resultMap>
+  
+  
+</mapper>

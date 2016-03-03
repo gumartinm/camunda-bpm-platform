@@ -19,4 +19,8 @@ package org.camunda.bpm.engine.batch;
 public interface Batch {
 
   String getId();
+
+  String getType();
+
+  int getSize();
 }

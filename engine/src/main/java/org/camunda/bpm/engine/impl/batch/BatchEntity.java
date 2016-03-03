@@ -31,8 +31,6 @@ public class BatchEntity implements Batch, DbEntity, Nameable {
   // persistent
   protected String id;
   protected String type;
-
-  // TODO: implement
   protected int size;
 
   protected ByteArrayField configuration = new ByteArrayField(this);
@@ -56,16 +54,32 @@ public class BatchEntity implements Batch, DbEntity, Nameable {
     this.type = type;
   }
 
+  public int getSize() {
+    return size;
+  }
+
+  public void setSize(int size) {
+    this.size = size;
+  }
+
   @Override
   public String getName() {
     return getId();
   }
 
-  public void setConfiguration(byte[] configuration) {
+  public void setConfiguration(String configuration) {
+    this.configuration.setByteArrayId(configuration);
+  }
+
+  public String getConfiguration() {
+    return this.configuration.getByteArrayId();
+  }
+
+  public void setConfigurationBytes(byte[] configuration) {
     this.configuration.setByteArrayValue(configuration);
   }
 
-  public byte[] getConfiguration() {
+  public byte[] getConfigurationBytes() {
     return this.configuration.getByteArrayValue();
   }
 

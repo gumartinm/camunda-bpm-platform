@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.camunda.bpm.engine.MigrationPlanBuilder;
 import org.camunda.bpm.engine.RuntimeService;
+import org.camunda.bpm.engine.batch.Batch;
 import org.camunda.bpm.engine.form.FormData;
 import org.camunda.bpm.engine.impl.cmd.ActivateProcessInstanceCmd;
 import org.camunda.bpm.engine.impl.cmd.DeleteProcessInstanceCmd;
@@ -37,6 +38,7 @@ import org.camunda.bpm.engine.impl.cmd.RemoveExecutionVariablesCmd;
 import org.camunda.bpm.engine.impl.cmd.SetExecutionVariablesCmd;
 import org.camunda.bpm.engine.impl.cmd.SignalCmd;
 import org.camunda.bpm.engine.impl.cmd.SuspendProcessInstanceCmd;
+import org.camunda.bpm.engine.impl.migration.MigrateProcessInstanceBatchCmd;
 import org.camunda.bpm.engine.impl.migration.MigrateProcessInstanceCmd;
 import org.camunda.bpm.engine.impl.migration.MigrationPlanBuilderImpl;
 import org.camunda.bpm.engine.migration.MigrationPlan;
@@ -484,6 +486,10 @@ public class RuntimeServiceImpl extends ServiceImpl implements RuntimeService {
   public void executeMigrationPlan(MigrationPlan migrationPlan, List<String> processInstanceIds) {
     commandExecutor.execute(new MigrateProcessInstanceCmd(migrationPlan, processInstanceIds));
 
+  }
+
+  public Batch executeMigrationPlanAsync(MigrationPlan migrationPlan, List<String> processInstanceIds) {
+    return commandExecutor.execute(new MigrateProcessInstanceBatchCmd(migrationPlan, processInstanceIds));
   }
 
 }

@@ -257,6 +257,15 @@ create table ACT_RU_EXT_TASK (
   primary key (ID_)
 );
 
+create table ACT_RU_BATCH (
+  ID_ varchar(64),
+  REV_ integer,
+  TYPE_ varchar(255),
+  SIZE_ integer,
+  CONFIGURATION_ varchar(255),
+  primary key (ID_)
+);
+
 create index ACT_IDX_EXEC_BUSKEY on ACT_RU_EXECUTION(BUSINESS_KEY_);
 create index ACT_IDX_EXEC_TENANT_ID on ACT_RU_EXECUTION(TENANT_ID_);
 create index ACT_IDX_TASK_CREATE on ACT_RU_TASK(CREATE_TIME_);

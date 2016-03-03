@@ -33,7 +33,7 @@ public class MigrateProcessInstanceBatchCmd implements Command<Batch> {
   protected List<String> processInstanceIds;
   protected MigrationPlan migrationPlan;
 
-  public MigrateProcessInstanceBatchCmd(List<String> processInstanceIds, MigrationPlan migrationPlan) {
+  public MigrateProcessInstanceBatchCmd(MigrationPlan migrationPlan, List<String> processInstanceIds) {
     this.processInstanceIds = processInstanceIds;
     this.migrationPlan = migrationPlan;
   }
@@ -46,17 +46,19 @@ public class MigrateProcessInstanceBatchCmd implements Command<Batch> {
 
     BatchEntity batch = new BatchEntity();
     batch.setType(MigrationBatchHandler.TYPE);
+    batch.setSize(processInstanceIds.size());
 
     MigrationBatchConfiguration configuration = new MigrationBatchConfiguration();
     configuration.setMigrationPlan(migrationPlan);
     configuration.setProcessInstanceIds(processInstanceIds);
-    batch.setConfiguration(BATCH_HANDLER.writeConfiguration(configuration));
+    batch.setConfigurationBytes(BATCH_HANDLER.writeConfiguration(configuration));
+
+    commandContext.getBatchManager().insert(batch);
 
     JobEntity seedJob = batch.createSeedJob();
-
     commandContext.getJobManager().insert(seedJob);
 
-    return null;
+    return batch;
   }
 
 }
