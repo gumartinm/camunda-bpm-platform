@@ -10,30 +10,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.camunda.bpm.engine.impl.batch;
 
-package org.camunda.bpm.engine.impl.variable.serializer;
-
-import org.camunda.bpm.engine.impl.persistence.entity.Nameable;
+import org.camunda.bpm.engine.impl.jobexecutor.JobHandler;
 
 /**
- * @author Tom Baeyens
- * @author Daniel Meyer
+ * @author Thorben Lindhauer
+ *
  */
-public interface ValueFields extends Nameable {
+public interface BatchHandler<T> extends JobHandler {
 
-  String getTextValue();
-  void setTextValue(String textValue);
+  byte[] writeConfiguration(T configuration);
 
-  String getTextValue2();
-  void setTextValue2(String textValue2);
+  T readConfiguration(byte[] serializedConfiguration);
 
-  Long getLongValue();
-  void setLongValue(Long longValue);
-
-  Double getDoubleValue();
-  void setDoubleValue(Double doubleValue);
-
-  byte[] getByteArrayValue();
-  void setByteArrayValue(byte[] bytes);
-
+  /**
+   * Returns true if more jobs need to be created to complete the batch
+   */
+  boolean createJobs(BatchEntity batch, int numJobsPerSeedInvocation, int numInvocationsPerJobs);
 }

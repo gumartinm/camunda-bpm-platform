@@ -50,6 +50,7 @@ import org.camunda.bpm.engine.impl.identity.WritableIdentityProvider;
 import org.camunda.bpm.engine.impl.jobexecutor.FailedJobCommandFactory;
 import org.camunda.bpm.engine.impl.persistence.entity.AttachmentManager;
 import org.camunda.bpm.engine.impl.persistence.entity.AuthorizationManager;
+import org.camunda.bpm.engine.impl.persistence.entity.BatchManager;
 import org.camunda.bpm.engine.impl.persistence.entity.ByteArrayManager;
 import org.camunda.bpm.engine.impl.persistence.entity.CommentManager;
 import org.camunda.bpm.engine.impl.persistence.entity.DeploymentManager;
@@ -423,6 +424,10 @@ public class CommandContext {
 
   public JobManager getJobManager() {
     return getSession(JobManager.class);
+  }
+
+  public BatchManager getBatchManager() {
+    return getSession(BatchManager.class);
   }
 
   public JobDefinitionManager getJobDefinitionManager() {

@@ -18,6 +18,7 @@ import java.util.Map;
 
 import org.camunda.bpm.engine.authorization.Permissions;
 import org.camunda.bpm.engine.authorization.Resources;
+import org.camunda.bpm.engine.batch.Batch;
 import org.camunda.bpm.engine.delegate.ExecutionListener;
 import org.camunda.bpm.engine.migration.MigratingProcessInstanceValidationException;
 import org.camunda.bpm.engine.migration.MigrationPlan;
@@ -1703,5 +1704,8 @@ public interface RuntimeService {
    *   that are not applicable to any of the process instances
    */
   void executeMigrationPlan(MigrationPlan migrationPlan, List<String> processInstanceIds);
+
+  // TODO: BUILDER
+  Batch executeMigrationPlanAsync(MigrationPlan migrationPlan, List<String> processInstanceIds);
 
 }

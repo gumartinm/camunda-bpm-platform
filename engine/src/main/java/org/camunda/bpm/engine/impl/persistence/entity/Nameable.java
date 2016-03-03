@@ -10,30 +10,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.camunda.bpm.engine.impl.variable.serializer;
-
-import org.camunda.bpm.engine.impl.persistence.entity.Nameable;
+package org.camunda.bpm.engine.impl.persistence.entity;
 
 /**
- * @author Tom Baeyens
- * @author Daniel Meyer
+ * @author Thorben Lindhauer
+ *
  */
-public interface ValueFields extends Nameable {
+public interface Nameable {
 
-  String getTextValue();
-  void setTextValue(String textValue);
-
-  String getTextValue2();
-  void setTextValue2(String textValue2);
-
-  Long getLongValue();
-  void setLongValue(Long longValue);
-
-  Double getDoubleValue();
-  void setDoubleValue(Double doubleValue);
-
-  byte[] getByteArrayValue();
-  void setByteArrayValue(byte[] bytes);
-
+  String getName();
 }

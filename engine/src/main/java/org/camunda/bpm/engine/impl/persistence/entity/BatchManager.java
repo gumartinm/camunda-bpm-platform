@@ -10,30 +10,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.camunda.bpm.engine.impl.persistence.entity;
 
-package org.camunda.bpm.engine.impl.variable.serializer;
-
-import org.camunda.bpm.engine.impl.persistence.entity.Nameable;
+import org.camunda.bpm.engine.impl.batch.BatchEntity;
+import org.camunda.bpm.engine.impl.persistence.AbstractManager;
 
 /**
- * @author Tom Baeyens
- * @author Daniel Meyer
+ * @author Thorben Lindhauer
+ *
  */
-public interface ValueFields extends Nameable {
+public class BatchManager extends AbstractManager {
 
-  String getTextValue();
-  void setTextValue(String textValue);
+  public void insertBatch(BatchEntity batch) {
+    getDbEntityManager().insert(batch);
+  }
 
-  String getTextValue2();
-  void setTextValue2(String textValue2);
-
-  Long getLongValue();
-  void setLongValue(Long longValue);
-
-  Double getDoubleValue();
-  void setDoubleValue(Double doubleValue);
-
-  byte[] getByteArrayValue();
-  void setByteArrayValue(byte[] bytes);
+  public BatchEntity findBatchById(String id) {
+    return getDbEntityManager().selectById(BatchEntity.class, id);
+  }
 
 }

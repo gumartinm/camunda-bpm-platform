@@ -97,7 +97,7 @@ public abstract class JobDeclaration<S, T extends JobEntity> implements Serializ
 
     ExecutionEntity contextExecution = resolveExecution(context);
 
-    if (Context.getProcessEngineConfiguration().isProducePrioritizedJobs()) {
+    if (contextExecution != null && Context.getProcessEngineConfiguration().isProducePrioritizedJobs()) {
       long priority = Context
           .getProcessEngineConfiguration()
           .getJobPriorityProvider()
@@ -117,6 +117,11 @@ public abstract class JobDeclaration<S, T extends JobEntity> implements Serializ
   protected void postInitialize(S context, T job) {
   }
 
+  /**
+   * Returns the execution in which context the job is created. The execution
+   * is used to determine the job's priority based on a BPMN activity
+   * the execution is currently executing. May be null.
+   */
   protected abstract ExecutionEntity resolveExecution(S context);
 
   protected abstract T newJobInstance(S context);
