@@ -341,9 +341,8 @@ public class ManagementServiceImpl extends ServiceImpl implements ManagementServ
     commandExecutor.execute(new SetJobDefinitionPriorityCmd(jobDefinitionId, null, false));
   }
 
-  public void deleteBatch(String batchId) {
-    commandExecutor.execute(new DeleteBatchCmd(batchId));
-
+  public void deleteBatch(String batchId, boolean cascade) {
+    commandExecutor.execute(new DeleteBatchCmd(batchId, cascade));
   }
 
 

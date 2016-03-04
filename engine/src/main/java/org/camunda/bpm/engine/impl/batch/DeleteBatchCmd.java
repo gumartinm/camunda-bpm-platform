@@ -21,10 +21,12 @@ import org.camunda.bpm.engine.impl.interceptor.CommandContext;
  */
 public class DeleteBatchCmd implements Command<Void> {
 
+  protected boolean cascadeToHistory;
   protected String batchId;
 
-  public DeleteBatchCmd(String batchId) {
+  public DeleteBatchCmd(String batchId, boolean cascadeToHistory) {
     this.batchId = batchId;
+    this.cascadeToHistory = cascadeToHistory;
   }
 
   @Override
@@ -34,15 +36,7 @@ public class DeleteBatchCmd implements Command<Void> {
     // TODO: null checks for id and entity
     // TODO: check authorizations
 
-    // TODO: when to cascade to history (i.e. historic job log, historic batch?)
-
-    BatchHandler<?> batchHandler = commandContext.getProcessEngineConfiguration().getBatchHandler(batchEntity.getType());
-    batchHandler.deleteJobs(batchEntity);
-
-    batchEntity.deleteSeedJob();
-    batchEntity.setConfigurationBytes(null);
-
-    commandContext.getBatchManager().delete(batchEntity);
+    batchEntity.delete(cascadeToHistory);
 
     return null;
   }

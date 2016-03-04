@@ -25,9 +25,11 @@ import org.camunda.bpm.engine.impl.batch.BatchEntity;
 import org.camunda.bpm.engine.impl.batch.BatchHandler;
 import org.camunda.bpm.engine.impl.context.Context;
 import org.camunda.bpm.engine.impl.interceptor.CommandContext;
+import org.camunda.bpm.engine.impl.jobexecutor.JobDeclaration;
 import org.camunda.bpm.engine.impl.migration.MigrationBatchHandler.MigrationBatchConfiguration;
 import org.camunda.bpm.engine.impl.persistence.entity.ByteArrayEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.JobDefinitionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.JobEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.MessageEntity;
 import org.camunda.bpm.engine.impl.util.IoUtil;
@@ -88,6 +90,7 @@ public class MigrationBatchHandler implements BatchHandler<MigrationBatchConfigu
   @Override
   public boolean createJobs(BatchEntity batch, int numJobsPerSeedInvocation, int numInvocationsPerJobs) {
     MigrationBatchConfiguration configuration = readConfiguration(batch.getConfigurationBytes());
+    JobDefinitionEntity jobDefinition = batch.getExecutionJobDefinition();
 
     List<String> unprocessedProcessInstanceIds = configuration.getProcessInstanceIds();
     List<JobEntity> jobsCreated = new ArrayList<JobEntity>();
@@ -112,6 +115,7 @@ public class MigrationBatchHandler implements BatchHandler<MigrationBatchConfigu
       Context.getCommandContext().getByteArrayManager().insert(configurationEntity);
 
       MessageEntity jobInstance = JOB_DECLARATION.createJobInstance(configurationEntity);
+      jobInstance.setJobDefinition(jobDefinition);
       jobsCreated.add(jobInstance);
       Context.getCommandContext().getJobManager().insert(jobInstance);
     }
@@ -140,6 +144,11 @@ public class MigrationBatchHandler implements BatchHandler<MigrationBatchConfigu
   @Override
   public String getType() {
     return TYPE;
+  }
+
+  @Override
+  public JobDeclaration<?, MessageEntity> getJobDeclaration() {
+    return JOB_DECLARATION;
   }
 
   @Override

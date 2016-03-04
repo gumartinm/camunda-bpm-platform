@@ -982,6 +982,6 @@ public interface ManagementService {
    */
   void reportDbMetricsNow();
 
-  void deleteBatch(String batchId);
+  void deleteBatch(String batchId, boolean cascade);
 
 }

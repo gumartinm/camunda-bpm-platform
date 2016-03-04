@@ -55,8 +55,9 @@ public class MigrateProcessInstanceBatchCmd implements Command<Batch> {
 
     commandContext.getBatchManager().insert(batch);
 
-    JobEntity seedJob = batch.createSeedJob();
-    commandContext.getJobManager().insert(seedJob);
+    batch.createSeedJobDefinition();
+    batch.createSeedJob();
+    batch.createExecutionJobDefinition();
 
     return batch;
   }

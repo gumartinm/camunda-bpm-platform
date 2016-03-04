@@ -19,6 +19,7 @@ import org.camunda.bpm.engine.batch.Batch;
 import org.camunda.bpm.engine.impl.context.Context;
 import org.camunda.bpm.engine.impl.db.DbEntity;
 import org.camunda.bpm.engine.impl.db.HasDbRevision;
+import org.camunda.bpm.engine.impl.persistence.entity.JobDefinitionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.JobEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.Nameable;
 import org.camunda.bpm.engine.impl.persistence.entity.util.ByteArrayField;
@@ -36,8 +37,15 @@ public class BatchEntity implements Batch, DbEntity, Nameable, HasDbRevision {
   protected String type;
   protected int size;
   protected int revision;
+  protected String seedJobDefinitionId;
+  protected String executionJobDefinitionId;
 
   protected ByteArrayField configuration = new ByteArrayField(this);
+
+  // transient
+  protected JobDefinitionEntity seedJobDefinition;
+  protected JobDefinitionEntity executionJobDefinition;
+  protected BatchHandler<?> batchHandler;
 
   public String getId() {
     return id;
@@ -61,6 +69,38 @@ public class BatchEntity implements Batch, DbEntity, Nameable, HasDbRevision {
 
   public void setSize(int size) {
     this.size = size;
+  }
+
+  public String getSeedJobDefinitionId() {
+    return seedJobDefinitionId;
+  }
+
+  public void setSeedJobDefinitionId(String jobDefinitionId) {
+    this.seedJobDefinitionId = jobDefinitionId;
+  }
+
+  public String getExecutionJobDefinitionId() {
+    return executionJobDefinitionId;
+  }
+
+  public void setExecutionJobDefinitionId(String executionJobDefinitionId) {
+    this.executionJobDefinitionId = executionJobDefinitionId;
+  }
+
+  public JobDefinitionEntity getSeedJobDefinition() {
+    if (seedJobDefinition == null && seedJobDefinitionId != null) {
+      seedJobDefinition = Context.getCommandContext().getJobDefinitionManager().findById(seedJobDefinitionId);
+    }
+
+    return seedJobDefinition;
+  }
+
+  public JobDefinitionEntity getExecutionJobDefinition() {
+    if (executionJobDefinition == null && executionJobDefinitionId != null) {
+      executionJobDefinition = Context.getCommandContext().getJobDefinitionManager().findById(executionJobDefinitionId);
+    }
+
+    return executionJobDefinition;
   }
 
   @Override
@@ -92,8 +132,43 @@ public class BatchEntity implements Batch, DbEntity, Nameable, HasDbRevision {
     return persistentState;
   }
 
+  public BatchHandler<?> getBatchHandler() {
+    if (batchHandler == null) {
+      batchHandler = Context.getCommandContext().getProcessEngineConfiguration().getBatchHandler(type);
+    }
+
+    return batchHandler;
+  }
+
+  public JobDefinitionEntity createSeedJobDefinition() {
+    seedJobDefinition = new JobDefinitionEntity(BATCH_JOB_DECLARATION);
+    seedJobDefinition.setJobConfiguration(id);
+
+    Context.getCommandContext().getJobDefinitionManager().insert(seedJobDefinition);
+
+    seedJobDefinitionId = seedJobDefinition.getId();
+
+    return seedJobDefinition;
+  }
+
+  public JobDefinitionEntity createExecutionJobDefinition() {
+
+    executionJobDefinition = new JobDefinitionEntity(getBatchHandler().getJobDeclaration());
+    // TODO: what to set the configuration to?
+//    jobDefinition.setJobConfiguration();
+    Context.getCommandContext().getJobDefinitionManager().insert(executionJobDefinition);
+
+    executionJobDefinitionId = executionJobDefinition.getId();
+
+    return executionJobDefinition;
+  }
+
   public JobEntity createSeedJob() {
-    return BATCH_JOB_DECLARATION.createJobInstance(this);
+    JobEntity seedJob = BATCH_JOB_DECLARATION.createJobInstance(this);
+
+    Context.getCommandContext().getJobManager().insert(seedJob);
+
+    return seedJob;
   }
 
   public void deleteSeedJob() {
@@ -105,6 +180,20 @@ public class BatchEntity implements Batch, DbEntity, Nameable, HasDbRevision {
       for (JobEntity job : seedJobs) {
         job.delete();
       }
+    }
+  }
+
+  public void delete(boolean cascadeToHistory) {
+    deleteSeedJob();
+    getBatchHandler().deleteJobs(this);
+    Context.getCommandContext().getBatchManager().delete(this);
+
+    if (cascadeToHistory) {
+      Context.getCommandContext().getHistoricJobLogManager().deleteHistoricJobLogsByJobDefinitionId(seedJobDefinitionId);
+      Context.getCommandContext().getHistoricJobLogManager().deleteHistoricJobLogsByJobDefinitionId(executionJobDefinitionId);
+
+      Context.getCommandContext().getJobDefinitionManager().delete(getSeedJobDefinition());
+      Context.getCommandContext().getJobDefinitionManager().delete(getExecutionJobDefinition());
     }
   }
 

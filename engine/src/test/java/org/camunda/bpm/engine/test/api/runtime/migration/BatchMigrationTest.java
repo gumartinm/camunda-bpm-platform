@@ -48,7 +48,7 @@ public class BatchMigrationTest {
   @After
   public void tearDown() {
     if (batch != null) {
-      rule.getManagementService().deleteBatch(batch.getId());
+      rule.getManagementService().deleteBatch(batch.getId(), true);
     }
 
     // TODO: delete the historic job log handler as long as we do not delete them when deleting the batch
@@ -112,7 +112,7 @@ public class BatchMigrationTest {
     batch = rule.getRuntimeService().executeMigrationPlanAsync(migrationPlan, processInstanceIds);
 
     // when
-    rule.getManagementService().deleteBatch(batch.getId());
+    rule.getManagementService().deleteBatch(batch.getId(), true);
 
     // then
     // TODO: also assert that the batch entity does not exist any longer

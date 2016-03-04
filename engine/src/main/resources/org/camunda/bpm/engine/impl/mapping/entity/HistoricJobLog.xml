@@ -77,6 +77,10 @@
   <delete id="deleteHistoricJobLogByHandlerType">
     delete from ${prefix}ACT_HI_JOB_LOG where JOB_DEF_TYPE_ = #{handlerType}
   </delete>
+  
+  <delete id="deleteHistoricJobLogByJobDefinitionId">
+    delete from ${prefix}ACT_HI_JOB_LOG where JOB_DEF_ID_ = #{jobDefinitionId}
+  </delete>
 
   <!-- BYTE ARRAY DELETE -->
 

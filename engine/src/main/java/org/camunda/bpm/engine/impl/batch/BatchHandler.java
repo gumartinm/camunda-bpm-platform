@@ -12,7 +12,10 @@
  */
 package org.camunda.bpm.engine.impl.batch;
 
+import org.camunda.bpm.engine.impl.jobexecutor.JobDeclaration;
 import org.camunda.bpm.engine.impl.jobexecutor.JobHandler;
+import org.camunda.bpm.engine.impl.persistence.entity.JobDefinitionEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.MessageEntity;
 
 /**
  * @author Thorben Lindhauer
@@ -23,6 +26,8 @@ public interface BatchHandler<T> extends JobHandler {
   byte[] writeConfiguration(T configuration);
 
   T readConfiguration(byte[] serializedConfiguration);
+
+  JobDeclaration<?, MessageEntity> getJobDeclaration();
 
   /**
    * Returns true if more jobs need to be created to complete the batch

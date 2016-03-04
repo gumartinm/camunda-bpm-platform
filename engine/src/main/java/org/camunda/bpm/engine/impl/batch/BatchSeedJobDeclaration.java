@@ -43,4 +43,9 @@ public class BatchSeedJobDeclaration extends JobDeclaration<BatchEntity, Message
     return context.getId();
   }
 
+  @Override
+  protected String resolveJobDefinitionId(BatchEntity context) {
+    return context.getSeedJobDefinitionId();
+  }
+
 }
