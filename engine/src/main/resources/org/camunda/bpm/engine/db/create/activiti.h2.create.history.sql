@@ -219,6 +219,16 @@ create table ACT_HI_JOB_LOG (
     primary key (ID_)
 );
 
+create table ACT_HI_BATCH (
+    ID_ varchar(64),
+    REV_ integer,
+    TYPE_ varchar(255),
+    SIZE_ integer,
+    START_TIME_ timestamp not null,
+    END_TIME_ timestamp,
+    primary key (ID_)
+);
+
 create index ACT_IDX_HI_PRO_INST_END on ACT_HI_PROCINST(END_TIME_);
 create index ACT_IDX_HI_PRO_I_BUSKEY on ACT_HI_PROCINST(BUSINESS_KEY_);
 create index ACT_IDX_HI_PRO_INST_TENANT_ID on ACT_HI_PROCINST(TENANT_ID_);

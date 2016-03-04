@@ -45,3 +45,4 @@ drop table ACT_HI_ATTACHMENT if exists;
 drop table ACT_HI_OP_LOG if exists;
 drop table ACT_HI_INCIDENT if exists;
 drop table ACT_HI_JOB_LOG if exists;
+drop table ACT_HI_BATCH if exists;

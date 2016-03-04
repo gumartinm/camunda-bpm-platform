@@ -127,9 +127,10 @@ public class MigrationBatchHandler implements BatchHandler<MigrationBatchConfigu
   public void deleteJobs(BatchEntity batch) {
     // TODO: this should probably not fetch all the jobs
     // TODO: how do we identify which jobs belong to the given batch?
+    // TODO: make sure this uses an index?!
     List<JobEntity> jobs = Context.getCommandContext()
       .getJobManager()
-      .findJobsByConfiguration(TYPE, batch.getId(), null);
+      .findJobsByJobDefinitionId(batch.getExecutionJobDefinitionId());
 
     for (JobEntity job : jobs) {
       Context.getCommandContext()
@@ -160,6 +161,8 @@ public class MigrationBatchHandler implements BatchHandler<MigrationBatchConfigu
       .getProcessEngineConfiguration()
       .getRuntimeService()
       .executeMigrationPlan(batchConfiguration.getMigrationPlan(), batchConfiguration.getProcessInstanceIds());
+
+    commandContext.getByteArrayManager().delete(configurationEntity);
   }
 
   public static class MigrationBatchConfiguration implements Serializable {

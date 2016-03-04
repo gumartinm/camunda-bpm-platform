@@ -16,6 +16,7 @@ package org.camunda.bpm.engine;
 
 import org.camunda.bpm.engine.authorization.Permissions;
 import org.camunda.bpm.engine.authorization.Resources;
+import org.camunda.bpm.engine.batch.history.HistoricBatchQuery;
 import org.camunda.bpm.engine.history.HistoricActivityInstance;
 import org.camunda.bpm.engine.history.HistoricActivityInstanceQuery;
 import org.camunda.bpm.engine.history.HistoricActivityStatisticsQuery;
@@ -99,6 +100,8 @@ public interface HistoryService {
    * then the result of the query is empty.
    */
   HistoricDecisionInstanceQuery createHistoricDecisionInstanceQuery();
+
+  HistoricBatchQuery createHistoricBatchQuery();
 
   /**
    * Deletes historic task instance.  This might be useful for tasks that are

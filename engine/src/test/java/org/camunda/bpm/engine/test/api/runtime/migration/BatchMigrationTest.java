@@ -50,21 +50,6 @@ public class BatchMigrationTest {
     if (batch != null) {
       rule.getManagementService().deleteBatch(batch.getId(), true);
     }
-
-    // TODO: delete the historic job log handler as long as we do not delete them when deleting the batch
-    ProcessEngineConfigurationImpl engineConfiguration = (ProcessEngineConfigurationImpl) rule
-      .getProcessEngine()
-      .getProcessEngineConfiguration();
-    engineConfiguration.getCommandExecutorTxRequired().execute(new Command<Void>() {
-      @Override
-      public Void execute(CommandContext commandContext) {
-        commandContext.getHistoricJobLogManager().deleteHistoricJobLogsByHandlerType(BatchSeedJobHandler.TYPE);
-        commandContext.getHistoricJobLogManager().deleteHistoricJobLogsByHandlerType(MigrationBatchHandler.TYPE);
-        return null;
-      }
-
-    });
-
   }
 
   @Test

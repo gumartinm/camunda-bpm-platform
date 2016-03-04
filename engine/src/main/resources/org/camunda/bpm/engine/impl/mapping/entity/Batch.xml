@@ -13,6 +13,8 @@
       TYPE_,
       SIZE_,
       CONFIGURATION_,
+      SEED_JOB_DEF_ID_,
+      EXECUTION_JOB_DEF_ID_,
       REV_
     )
     values
@@ -21,6 +23,8 @@
       #{type, jdbcType=VARCHAR},
       #{size, jdbcType=INTEGER},
       #{configuration ,jdbcType=VARCHAR},
+      #{seedJobDefinitionId, jdbcType=VARCHAR},
+      #{executionJobDefinitionId, jdbcType=VARCHAR},
       1
     )
   </insert>
@@ -44,6 +48,8 @@
     <result property="type" column="TYPE_" jdbcType="VARCHAR" />
     <result property="size" column="SIZE_" jdbcType="INTEGER" />
     <result property="configuration" column="CONFIGURATION_" jdbcType="VARCHAR" />
+    <result property="seedJobDefinitionId" column="SEED_JOB_DEF_ID_" jdbcType="VARCHAR" />
+    <result property="executionJobDefinitionId" column="EXECUTION_JOB_DEF_ID_" jdbcType="VARCHAR" />
   </resultMap>
   
   

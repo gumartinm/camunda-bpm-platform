@@ -90,9 +90,9 @@ create table ACT_RU_JOB (
 create table ACT_RU_JOBDEF (
     ID_ varchar(64) NOT NULL,
     REV_ integer,
-    PROC_DEF_ID_ varchar(64) NOT NULL,
-    PROC_DEF_KEY_ varchar(255) NOT NULL,
-    ACT_ID_ varchar(255) NOT NULL,
+    PROC_DEF_ID_ varchar(64),
+    PROC_DEF_KEY_ varchar(255),
+    ACT_ID_ varchar(255),
     JOB_TYPE_ varchar(255) NOT NULL,
     JOB_CONFIGURATION_ varchar(255),
     SUSPENSION_STATE_ integer,
@@ -263,6 +263,8 @@ create table ACT_RU_BATCH (
   TYPE_ varchar(255),
   SIZE_ integer,
   CONFIGURATION_ varchar(255),
+  SEED_JOB_DEF_ID_ varchar(255), -- TODO: foreign key?
+  EXECUTION_JOB_DEF_ID_ varchar(255), -- TODO: foreign key?
   primary key (ID_)
 );
 

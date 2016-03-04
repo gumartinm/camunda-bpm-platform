@@ -19,6 +19,7 @@ import org.camunda.bpm.engine.batch.Batch;
 import org.camunda.bpm.engine.impl.context.Context;
 import org.camunda.bpm.engine.impl.db.DbEntity;
 import org.camunda.bpm.engine.impl.db.HasDbRevision;
+import org.camunda.bpm.engine.impl.history.event.HistoryEvent;
 import org.camunda.bpm.engine.impl.persistence.entity.JobDefinitionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.JobEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.Nameable;
@@ -187,6 +188,9 @@ public class BatchEntity implements Batch, DbEntity, Nameable, HasDbRevision {
     deleteSeedJob();
     getBatchHandler().deleteJobs(this);
     Context.getCommandContext().getBatchManager().delete(this);
+    configuration.deleteByteArrayValue();
+
+    fireHistoricEndEvent();
 
     if (cascadeToHistory) {
       Context.getCommandContext().getHistoricJobLogManager().deleteHistoricJobLogsByJobDefinitionId(seedJobDefinitionId);
@@ -194,7 +198,35 @@ public class BatchEntity implements Batch, DbEntity, Nameable, HasDbRevision {
 
       Context.getCommandContext().getJobDefinitionManager().delete(getSeedJobDefinition());
       Context.getCommandContext().getJobDefinitionManager().delete(getExecutionJobDefinition());
+
+      Context.getCommandContext().getHistoricBatchManager().deleteHistoricBatchById(id);
+      // TODO: delete historic batch entity
     }
+  }
+
+  public void fireHistoricStartEvent() {
+    HistoryEvent historyEvent = Context.getCommandContext()
+      .getProcessEngineConfiguration()
+      .getHistoryEventProducer()
+      .createBatchStartEvent(this);
+
+    Context.getCommandContext()
+      .getProcessEngineConfiguration()
+      .getHistoryEventHandler()
+      .handleEvent(historyEvent);
+
+  }
+
+  public void fireHistoricEndEvent() {
+    HistoryEvent historyEvent = Context.getCommandContext()
+      .getProcessEngineConfiguration()
+      .getHistoryEventProducer()
+      .createBatchEndEvent(this);
+
+    Context.getCommandContext()
+      .getProcessEngineConfiguration()
+      .getHistoryEventHandler()
+      .handleEvent(historyEvent);
   }
 
   @Override

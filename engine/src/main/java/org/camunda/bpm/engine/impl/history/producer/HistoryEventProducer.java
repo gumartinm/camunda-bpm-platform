@@ -14,6 +14,7 @@ package org.camunda.bpm.engine.impl.history.producer;
 
 import java.util.List;
 
+import org.camunda.bpm.engine.batch.Batch;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.DelegateTask;
 import org.camunda.bpm.engine.delegate.VariableScope;
@@ -208,5 +209,8 @@ public interface HistoryEventProducer {
    * @since 7.3
    */
   public HistoryEvent createHistoricJobLogDeleteEvt(Job job);
+
+  HistoryEvent createBatchStartEvent(Batch batch);
+  HistoryEvent createBatchEndEvent(Batch batch);
 
 }

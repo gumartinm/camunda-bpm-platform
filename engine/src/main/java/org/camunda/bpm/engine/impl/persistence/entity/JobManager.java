@@ -186,6 +186,11 @@ public class JobManager extends AbstractManager {
   }
 
   @SuppressWarnings("unchecked")
+  public List<JobEntity> findJobsByJobDefinitionId(String jobDefinitionId) {
+    return getDbEntityManager().selectList("selectJobsByJobDefinitionId", jobDefinitionId);
+  }
+
+  @SuppressWarnings("unchecked")
   public List<JobEntity> findExclusiveJobsToExecute(String processInstanceId) {
     Map<String,Object> params = new HashMap<String, Object>();
     params.put("pid", processInstanceId);
@@ -299,5 +304,7 @@ public class JobManager extends AbstractManager {
     parameters.put("priority", priority);
     getDbEntityManager().update(JobEntity.class, "updateJobPriorityByDefinitionId", parameters);
   }
+
+
 
 }

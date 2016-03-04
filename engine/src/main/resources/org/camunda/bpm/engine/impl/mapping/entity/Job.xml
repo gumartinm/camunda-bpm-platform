@@ -180,6 +180,12 @@
     from ${prefix}ACT_RU_JOB J
     where J.PROCESS_INSTANCE_ID_ = #{parameter}
   </select>
+  
+  <select id="selectJobsByJobDefinitionId" parameterType="org.camunda.bpm.engine.impl.db.ListQueryParameterObject" resultMap="jobResultMap">
+    select *
+    from ${prefix}ACT_RU_JOB J
+    where J.JOB_DEF_ID_ = #{parameter}
+  </select>
 
   <select id="selectJobByQueryCriteria" parameterType="org.camunda.bpm.engine.impl.JobQueryImpl" resultMap="jobResultMap">
   	<include refid="org.camunda.bpm.engine.impl.persistence.entity.Commons.bindOrderBy"/>

@@ -19,11 +19,13 @@ import static org.camunda.bpm.engine.impl.util.StringUtil.toByteArray;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.camunda.bpm.engine.batch.Batch;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.DelegateTask;
 import org.camunda.bpm.engine.delegate.VariableScope;
 import org.camunda.bpm.engine.history.IncidentState;
 import org.camunda.bpm.engine.history.JobState;
+import org.camunda.bpm.engine.impl.batch.history.HistoricBatchEntity;
 import org.camunda.bpm.engine.impl.cfg.IdGenerator;
 import org.camunda.bpm.engine.impl.cmmn.entity.repository.CaseDefinitionEntity;
 import org.camunda.bpm.engine.impl.cmmn.entity.runtime.CaseExecutionEntity;
@@ -655,6 +657,35 @@ public class DefaultHistoryEventProducer implements HistoryEventProducer {
     return evt;
   }
 
+  // Batch
+
+  @Override
+  public HistoryEvent createBatchStartEvent(Batch batch) {
+    return createBatchEvent(batch, HistoryEventTypes.BATCH_START);
+  }
+
+  @Override
+  public HistoryEvent createBatchEndEvent(Batch batch) {
+    return createBatchEvent(batch, HistoryEventTypes.BATCH_END);
+  }
+
+  protected HistoryEvent createBatchEvent(Batch batch, HistoryEventTypes eventType) {
+    HistoricBatchEntity event = new HistoricBatchEntity();
+
+    event.setId(batch.getId());
+    event.setType(batch.getType());
+    event.setSize(batch.getSize());
+    event.setEventType(eventType.getEventName());
+
+    if (HistoryEventTypes.BATCH_START.equals(eventType)) {
+      event.setStartTime(ClockUtil.getCurrentTime());
+    }
+
+    // TODO: set start and end time depending on event type
+
+    return event;
+  }
+
   // Job Log
 
   public HistoryEvent createHistoricJobLogCreateEvt(Job job) {
@@ -691,6 +722,7 @@ public class DefaultHistoryEventProducer implements HistoryEventProducer {
     initHistoricJobLogEvent(event, job, eventType);
     return event;
   }
+
 
   protected void initHistoricJobLogEvent(HistoricJobLogEventEntity evt, Job job, HistoryEventType eventType) {
     evt.setTimestamp(ClockUtil.getCurrentTime());
