@@ -22,6 +22,7 @@ import org.camunda.bpm.application.ProcessApplicationRegistration;
 import org.camunda.bpm.engine.authorization.Groups;
 import org.camunda.bpm.engine.authorization.Permissions;
 import org.camunda.bpm.engine.authorization.Resources;
+import org.camunda.bpm.engine.batch.BatchQuery;
 import org.camunda.bpm.engine.impl.jobexecutor.JobExecutor;
 import org.camunda.bpm.engine.management.ActivityStatisticsQuery;
 import org.camunda.bpm.engine.management.DeploymentStatisticsQuery;
@@ -981,6 +982,8 @@ public interface ManagementService {
    * reporter is deactivated
    */
   void reportDbMetricsNow();
+
+  BatchQuery createBatchQuery();
 
   void deleteBatch(String batchId, boolean cascade);
 

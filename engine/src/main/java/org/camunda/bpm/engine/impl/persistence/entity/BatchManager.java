@@ -12,7 +12,12 @@
  */
 package org.camunda.bpm.engine.impl.persistence.entity;
 
+import java.util.List;
+
+import org.camunda.bpm.engine.batch.Batch;
+import org.camunda.bpm.engine.impl.Page;
 import org.camunda.bpm.engine.impl.batch.BatchEntity;
+import org.camunda.bpm.engine.impl.batch.BatchQueryImpl;
 import org.camunda.bpm.engine.impl.persistence.AbstractManager;
 
 /**
@@ -27,6 +32,17 @@ public class BatchManager extends AbstractManager {
 
   public BatchEntity findBatchById(String id) {
     return getDbEntityManager().selectById(BatchEntity.class, id);
+  }
+
+  public long findBatchCountByQueryCriteria(BatchQueryImpl batchQuery) {
+    // TODO: authorization
+    return (Long) getDbEntityManager().selectOne("selectBatchCountByQueryCriteria", batchQuery);
+  }
+
+  @SuppressWarnings("unchecked")
+  public List<Batch> findBatchesByQueryCriteria(BatchQueryImpl batchQuery, Page page) {
+    // TODO: authorization
+    return getDbEntityManager().selectList("selectBatchesByQueryCriteria", batchQuery, page);
   }
 
 }

@@ -28,17 +28,6 @@
       1
     )
   </insert>
-  
-  <!-- DELETE -->
-
-  <delete id="deleteBatch" parameterType="org.camunda.bpm.engine.impl.batch.BatchEntity">
-    delete from ${prefix}ACT_RU_BATCH where ID_ = #{id} and REV_ = #{revision}
-  </delete>
-  
-  <!-- SELECT -->
-  <select id="selectBatch" parameterType="string" resultMap="batchResultMap">
-    select * from ${prefix}ACT_RU_BATCH where ID_ = #{id}
-  </select>
 
   <!-- RESULTMAP -->
 
@@ -52,5 +41,34 @@
     <result property="executionJobDefinitionId" column="EXECUTION_JOB_DEF_ID_" jdbcType="VARCHAR" />
   </resultMap>
   
+  <!-- SELECT -->
+  <select id="selectBatch" parameterType="string" resultMap="batchResultMap">
+    select * from ${prefix}ACT_RU_BATCH where ID_ = #{id}
+  </select>
+
+  <select id="selectBatchesByQueryCriteria" parameterType="org.camunda.bpm.engine.impl.batch.BatchQueryImpl" resultMap="batchResultMap">
+    <include refid="org.camunda.bpm.engine.impl.persistence.entity.Commons.bindOrderBy"/>
+    ${limitBefore}
+    select RES.*
+    ${limitBetween}
+    <include refid="selectBatchesByQueryCriteriaSql"/>
+    ${orderBy}
+    ${limitAfter}
+  </select>
+
+  <select id="selectBatchCountByQueryCriteria" parameterType="org.camunda.bpm.engine.impl.batch.BatchQueryImpl" resultType="long">
+    select count(*)
+    <include refid="selectBatchesByQueryCriteriaSql"/>
+  </select>
+
+  <sql id="selectBatchesByQueryCriteriaSql">
+    from ${prefix}ACT_RU_BATCH RES
+  </sql>
+
+  <!-- DELETE -->
+
+  <delete id="deleteBatch" parameterType="org.camunda.bpm.engine.impl.batch.BatchEntity">
+    delete from ${prefix}ACT_RU_BATCH where ID_ = #{id} and REV_ = #{revision}
+  </delete>
   
 </mapper>

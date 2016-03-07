@@ -380,7 +380,14 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
   // BATCH ////////////////////////////////////////////////////////////////////
 
   protected Map<String, BatchHandler<?>> batchHandlers;
-  // TODO: add list for custom handlers
+  protected List<BatchHandler<?>> customBatchHandlers;
+
+  /** Number of jobs created by a batch seed job invocation */
+  protected int numberOfJobsCreatedByBatchSeedJob = 10;
+  /** Number of invocations executed by a single batch job */
+  protected int numberOfInvocationPerBatchJob = 1;
+  /** seconds to wait between polling for batch completion */
+  protected int batchCompletionPollWaitTime = 30;
 
   // OTHER ////////////////////////////////////////////////////////////////////
   protected List<FormEngine> customFormEngines;
@@ -682,6 +689,12 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
 
       MigrationBatchHandler migrationHandler = new MigrationBatchHandler();
       batchHandlers.put(migrationHandler.getType(), migrationHandler);
+    }
+
+    if (customBatchHandlers != null) {
+      for (BatchHandler<?> customBatchHandler : customBatchHandlers) {
+        batchHandlers.put(customBatchHandler.getType(), customBatchHandler);
+      }
     }
   }
 
@@ -2634,6 +2647,38 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
 
   public void setBatchHandlers(Map<String, BatchHandler<?>> batchHandlers) {
     this.batchHandlers = batchHandlers;
+  }
+
+  public List<BatchHandler<?>> getCustomBatchHandlers() {
+    return customBatchHandlers;
+  }
+
+  public void setCustomBatchHandlers(List<BatchHandler<?>> customBatchHandlers) {
+    this.customBatchHandlers = customBatchHandlers;
+  }
+
+  public int getNumberOfJobsCreatedByBatchSeedJob() {
+    return numberOfJobsCreatedByBatchSeedJob;
+  }
+
+  public void setNumberOfJobsCreatedByBatchSeedJob(int numberOfJobsCreatedByBatchSeedJob) {
+    this.numberOfJobsCreatedByBatchSeedJob = numberOfJobsCreatedByBatchSeedJob;
+  }
+
+  public int getNumberOfInvocationPerBatchJob() {
+    return numberOfInvocationPerBatchJob;
+  }
+
+  public void setNumberOfInvocationPerBatchJob(int numberOfInvocationPerBatchJob) {
+    this.numberOfInvocationPerBatchJob = numberOfInvocationPerBatchJob;
+  }
+
+  public int getBatchCompletionPollWaitTime() {
+    return batchCompletionPollWaitTime;
+  }
+
+  public void setBatchCompletionPollWaitTime(int batchCompletionPollWaitTime) {
+    this.batchCompletionPollWaitTime = batchCompletionPollWaitTime;
   }
 
   public SessionFactory getIdentityProviderSessionFactory() {

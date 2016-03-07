@@ -120,6 +120,9 @@ public class MigrationBatchHandler implements BatchHandler<MigrationBatchConfigu
       Context.getCommandContext().getJobManager().insert(jobInstance);
     }
 
+    configuration.setProcessInstanceIds(unprocessedProcessInstanceIds);
+    writeConfiguration(configuration);
+
     return unprocessedProcessInstanceIds.isEmpty();
   }
 

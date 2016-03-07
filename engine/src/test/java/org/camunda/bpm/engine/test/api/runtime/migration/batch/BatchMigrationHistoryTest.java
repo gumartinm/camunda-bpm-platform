@@ -10,7 +10,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.bpm.engine.test.api.runtime.migration;
+package org.camunda.bpm.engine.test.api.runtime.migration.batch;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,6 +20,8 @@ import org.camunda.bpm.engine.batch.history.HistoricBatch;
 import org.camunda.bpm.engine.migration.MigrationPlan;
 import org.camunda.bpm.engine.repository.ProcessDefinition;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
+import org.camunda.bpm.engine.test.api.runtime.migration.MigrationTestRule;
+import org.camunda.bpm.engine.test.api.runtime.migration.ProcessModels;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Rule;

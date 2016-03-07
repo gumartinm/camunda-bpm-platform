@@ -27,12 +27,13 @@ import org.camunda.bpm.engine.impl.persistence.AbstractManager;
 public class HistoricBatchManager extends AbstractManager {
 
   public long findBatchCountByQueryCriteria(HistoricBatchQueryImpl historicBatchQuery) {
-
     // TODO: authorization
     return (Long) getDbEntityManager().selectOne("selectHistoricBatchCountByQueryCriteria", historicBatchQuery);
   }
 
+  @SuppressWarnings("unchecked")
   public List<HistoricBatch> findBatchesByQueryCriteria(HistoricBatchQueryImpl historicBatchQuery, Page page) {
+    // TODO: authorization
     return getDbEntityManager().selectList("selectHistoricBatchesByQueryCriteria", historicBatchQuery, page);
   }
 
