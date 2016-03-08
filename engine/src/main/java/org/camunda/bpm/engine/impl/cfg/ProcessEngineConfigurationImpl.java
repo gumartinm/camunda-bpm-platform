@@ -204,7 +204,7 @@ import org.camunda.bpm.engine.impl.migration.validation.instruction.OnlyOnceMapp
 import org.camunda.bpm.engine.impl.migration.validation.instruction.SameEventScopeInstructionValidator;
 import org.camunda.bpm.engine.impl.migration.validation.instruction.SameTypeInstructionValidator;
 import org.camunda.bpm.engine.impl.migration.validation.instruction.SupportedActivitiesInstructionValidator;
-import org.camunda.bpm.engine.impl.migration.MigrationBatchHandler;
+import org.camunda.bpm.engine.impl.migration.batch.MigrationBatchHandler;
 import org.camunda.bpm.engine.impl.persistence.GenericManagerFactory;
 import org.camunda.bpm.engine.impl.persistence.deploy.Deployer;
 import org.camunda.bpm.engine.impl.persistence.deploy.DeploymentCache;
@@ -383,7 +383,7 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
   protected List<BatchHandler<?>> customBatchHandlers;
 
   /** Number of jobs created by a batch seed job invocation */
-  protected int numberOfJobsCreatedByBatchSeedJob = 10;
+  protected int numberOfJobsPerBatchSeedJob = 10;
   /** Number of invocations executed by a single batch job */
   protected int numberOfInvocationPerBatchJob = 1;
   /** seconds to wait between polling for batch completion */
@@ -2657,12 +2657,12 @@ public abstract class ProcessEngineConfigurationImpl extends ProcessEngineConfig
     this.customBatchHandlers = customBatchHandlers;
   }
 
-  public int getNumberOfJobsCreatedByBatchSeedJob() {
-    return numberOfJobsCreatedByBatchSeedJob;
+  public int getNumberOfJobsPerBatchSeedJob() {
+    return numberOfJobsPerBatchSeedJob;
   }
 
-  public void setNumberOfJobsCreatedByBatchSeedJob(int numberOfJobsCreatedByBatchSeedJob) {
-    this.numberOfJobsCreatedByBatchSeedJob = numberOfJobsCreatedByBatchSeedJob;
+  public void setNumberOfJobsPerBatchSeedJob(int numberOfJobsPerBatchSeedJob) {
+    this.numberOfJobsPerBatchSeedJob = numberOfJobsPerBatchSeedJob;
   }
 
   public int getNumberOfInvocationPerBatchJob() {

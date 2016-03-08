@@ -12,20 +12,27 @@
  */
 package org.camunda.bpm.engine.test.api.runtime.migration.batch;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
+import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.ManagementService;
+import org.camunda.bpm.engine.ProcessEngineException;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.batch.Batch;
+import org.camunda.bpm.engine.batch.history.HistoricBatch;
 import org.camunda.bpm.engine.impl.batch.BatchSeedJobHandler;
 import org.camunda.bpm.engine.impl.cfg.ProcessEngineConfigurationImpl;
-import org.camunda.bpm.engine.impl.migration.MigrationBatchHandler;
+import org.camunda.bpm.engine.impl.migration.batch.MigrationBatchHandler;
 import org.camunda.bpm.engine.impl.util.ClockUtil;
 import org.camunda.bpm.engine.management.JobDefinition;
 import org.camunda.bpm.engine.migration.MigrationPlan;
@@ -34,14 +41,11 @@ import org.camunda.bpm.engine.runtime.Job;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
 import org.camunda.bpm.engine.test.api.runtime.migration.MigrationTestRule;
 import org.camunda.bpm.engine.test.api.runtime.migration.ProcessModels;
-import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-
-import groovy.transform.ASTTest;
 
 public class BatchMigrationTest {
 
@@ -54,11 +58,12 @@ public class BatchMigrationTest {
   protected ProcessEngineConfigurationImpl configuration;
   protected RuntimeService runtimeService;
   protected ManagementService managementService;
+  protected HistoryService historyService;
 
   protected ProcessDefinition sourceProcessDefinition;
   protected ProcessDefinition targetProcessDefinition;
 
-  protected int defaultNumberOfJobsCreatedBySeedJob;
+  protected int defaultNumberOfJobsPerBatchSeedJob;
   protected int defaultNumberOfInvocationPerBatchJob;
   protected int defaultBatchPollTime;
 
@@ -66,12 +71,13 @@ public class BatchMigrationTest {
   public void initServices() {
     runtimeService = rule.getRuntimeService();
     managementService = rule.getManagementService();
+    historyService = rule.getHistoryService();
   }
 
   @Before
   public void saveProcessEngineConfiguration() {
     configuration = (ProcessEngineConfigurationImpl) rule.getProcessEngine().getProcessEngineConfiguration();
-    defaultNumberOfJobsCreatedBySeedJob = configuration.getNumberOfJobsCreatedByBatchSeedJob();
+    defaultNumberOfJobsPerBatchSeedJob = configuration.getNumberOfJobsPerBatchSeedJob();
     defaultNumberOfInvocationPerBatchJob = configuration.getNumberOfInvocationPerBatchJob();
     defaultBatchPollTime = configuration.getBatchCompletionPollWaitTime();
   }
@@ -81,11 +87,16 @@ public class BatchMigrationTest {
     for (Batch batch : managementService.createBatchQuery().list()) {
       managementService.deleteBatch(batch.getId(), true);
     }
+
+    // remove history of completed batches
+    for (HistoricBatch historicBatch : historyService.createHistoricBatchQuery().list()) {
+      historyService.deleteHistoricBatch(historicBatch.getId());
+    }
   }
 
   @After
   public void resetProcessEngineConfiguration() {
-    configuration.setNumberOfJobsCreatedByBatchSeedJob(defaultNumberOfJobsCreatedBySeedJob);
+    configuration.setNumberOfJobsPerBatchSeedJob(defaultNumberOfJobsPerBatchSeedJob);
     configuration.setNumberOfInvocationPerBatchJob(defaultNumberOfInvocationPerBatchJob);
     configuration.setBatchCompletionPollWaitTime(defaultBatchPollTime);
   }
@@ -93,6 +104,49 @@ public class BatchMigrationTest {
   @After
   public void resetClock() {
     ClockUtil.reset();
+  }
+
+  @Test
+  public void testNullMigrationPlan() {
+    try {
+      runtimeService.executeMigrationPlan(null).processInstanceIds(Collections.singletonList("process")).executeAsync();
+      fail("Should not succeed");
+    }
+    catch (ProcessEngineException e) {
+      assertThat(e.getMessage(), containsString("migration plan is null"));
+    }
+  }
+
+  @Test
+  public void testNullProcessInstanceIds() {
+    ProcessDefinition testProcessDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
+    MigrationPlan migrationPlan = runtimeService.createMigrationPlan(testProcessDefinition.getId(), testProcessDefinition.getId())
+      .mapEqualActivities()
+      .build();
+
+    try {
+      runtimeService.executeMigrationPlan(migrationPlan).processInstanceIds(null).executeAsync();
+      fail("Should not succeed");
+    }
+    catch (ProcessEngineException e) {
+      assertThat(e.getMessage(), containsString("process instance ids is null"));
+    }
+  }
+
+  @Test
+  public void testEmptyProcessInstanceIds() {
+    ProcessDefinition testProcessDefinition = testHelper.deploy(ProcessModels.ONE_TASK_PROCESS);
+    MigrationPlan migrationPlan = runtimeService.createMigrationPlan(testProcessDefinition.getId(), testProcessDefinition.getId())
+      .mapEqualActivities()
+      .build();
+
+    try {
+      runtimeService.executeMigrationPlan(migrationPlan).processInstanceIds(Collections.<String>emptyList()).executeAsync();
+      fail("Should not succeed");
+    }
+    catch (ProcessEngineException e) {
+      assertThat(e.getMessage(), containsString("process instance ids is empty"));
+    }
   }
 
   @Test
@@ -104,7 +158,9 @@ public class BatchMigrationTest {
     assertNotNull(batch);
     assertNotNull(batch.getId());
     assertEquals("instance-migration", batch.getType());
-    assertEquals(10, batch.getSize());
+    assertEquals(defaultNumberOfJobsPerBatchSeedJob, batch.getSize());
+    assertEquals(defaultNumberOfJobsPerBatchSeedJob, batch.getNumberOfJobsPerSeedJobInvocation());
+    assertEquals(defaultNumberOfInvocationPerBatchJob, batch.getNumberOfInvocationsPerJob());
   }
 
   @Test
@@ -178,7 +234,7 @@ public class BatchMigrationTest {
 
     // then all process instances where migrated
     assertEquals(0, runtimeService.createProcessInstanceQuery().processDefinitionId(sourceProcessDefinition.getId()).count());
-    assertEquals(defaultNumberOfJobsCreatedBySeedJob, runtimeService.createProcessInstanceQuery().processDefinitionId(targetProcessDefinition.getId()).count());
+    assertEquals(defaultNumberOfJobsPerBatchSeedJob, runtimeService.createProcessInstanceQuery().processDefinitionId(targetProcessDefinition.getId()).count());
 
     // and the no migration jobs exist
     assertEquals(0, getMigrationJobs().size());
@@ -189,44 +245,49 @@ public class BatchMigrationTest {
 
   @Test
   public void testNumberOfJobsCreatedBySeedJobPerInvocation() {
-    migrateProcessInstancesAsyncForBatchInvocations(3);
+    Batch batch = migrateProcessInstancesAsyncForBatchInvocations(3);
 
     // when
     executeSeedJob();
 
     // then the default number of jobs was created
-    assertEquals(defaultNumberOfJobsCreatedBySeedJob, getMigrationJobs().size());
+    assertEquals(batch.getNumberOfJobsPerSeedJobInvocation(), getMigrationJobs().size());
 
     // when the seed job is executed a second time
     executeSeedJob();
 
     // then the same amount of jobs was created
-    assertEquals(2 * defaultNumberOfJobsCreatedBySeedJob, getMigrationJobs().size());
+    assertEquals(2 * batch.getNumberOfJobsPerSeedJobInvocation(), getMigrationJobs().size());
 
     // when the seed job is executed a third time
     executeSeedJob();
 
     // then the all jobs where created
-    assertEquals(3 * defaultNumberOfJobsCreatedBySeedJob, getMigrationJobs().size());
+    assertEquals(3 * batch.getNumberOfJobsPerSeedJobInvocation(), getMigrationJobs().size());
 
     // when the seed job is executed again
     executeSeedJob();
 
     // then no more jobs where created
-    assertEquals(3 * defaultNumberOfJobsCreatedBySeedJob, getMigrationJobs().size());
+    assertEquals(3 * batch.getNumberOfJobsPerSeedJobInvocation(), getMigrationJobs().size());
   }
 
   @Test
   public void testCustomNumberOfJobsCreateBySeedJob() {
-    int numberOfJobsCreated = 50;
-    int invocationsPerJob = 4;
+    int numberOfJobsCreated = 20;
+    int invocationsPerJob = 2;
     ProcessEngineConfigurationImpl configuration = (ProcessEngineConfigurationImpl) rule.getProcessEngine().getProcessEngineConfiguration();
-    configuration.setNumberOfJobsCreatedByBatchSeedJob(numberOfJobsCreated);
+    configuration.setNumberOfJobsPerBatchSeedJob(numberOfJobsCreated);
     configuration.setNumberOfInvocationPerBatchJob(invocationsPerJob);
 
-    migrateProcessInstancesAsyncForBatchInvocations(2);
-
     // when
+    Batch batch = migrateProcessInstancesAsyncForBatchInvocations(2);
+
+    // then the configuration was saved in the batch job
+    assertEquals(numberOfJobsCreated, batch.getNumberOfJobsPerSeedJobInvocation());
+    assertEquals(invocationsPerJob, batch.getNumberOfInvocationsPerJob());
+
+    // when the seed job is executed
     executeSeedJob();
 
     // then there exist the first batch of migration jobs
@@ -261,6 +322,22 @@ public class BatchMigrationTest {
   }
 
   @Test
+  public void testSeedJobRemovesBatchAfterCompletion() {
+    migrateProcessInstancesAsyncForBatchInvocations(1);
+    executeSeedJob();
+    executeMigrationJobs();
+
+    // when
+    executeSeedJob();
+
+    // then the batch was completed and removed
+    assertEquals(0, managementService.createBatchQuery().count());
+
+    // and the seed jobs was removed
+    assertEquals(0, managementService.createJobQuery().count());
+  }
+
+  @Test
   public void testBatchDeletion() {
     Batch batch = migrateProcessInstancesAsync(10);
     executeSeedJob();
@@ -281,7 +358,7 @@ public class BatchMigrationTest {
   // helper //////////////////////
 
   protected Batch migrateProcessInstancesAsyncForBatchInvocations(int numberOfBatchInvocation) {
-    int numberOfProcessInstance = numberOfBatchInvocation * configuration.getNumberOfInvocationPerBatchJob() * configuration.getNumberOfJobsCreatedByBatchSeedJob();
+    int numberOfProcessInstance = numberOfBatchInvocation * configuration.getNumberOfInvocationPerBatchJob() * configuration.getNumberOfJobsPerBatchSeedJob();
     return migrateProcessInstancesAsync(numberOfProcessInstance);
   }
 
@@ -300,7 +377,7 @@ public class BatchMigrationTest {
       .mapEqualActivities()
       .build();
 
-    return runtimeService.executeMigrationPlanAsync(migrationPlan, processInstanceIds);
+    return runtimeService.executeMigrationPlan(migrationPlan).processInstanceIds(processInstanceIds).executeAsync();
   }
 
   protected JobDefinition getSeedJobDefinition() {
@@ -315,10 +392,10 @@ public class BatchMigrationTest {
     return managementService.createJobQuery().jobDefinitionId(jobDefinition.getId()).singleResult();
   }
 
-
   protected List<Job> getJobsForDefinition(JobDefinition jobDefinition) {
     return managementService.createJobQuery().jobDefinitionId(jobDefinition.getId()).list();
   }
+
 
   protected Job getSeedJob() {
     return getJobForDefinition(getSeedJobDefinition());
@@ -330,6 +407,12 @@ public class BatchMigrationTest {
 
   protected void executeSeedJob() {
     executeJob(getSeedJob());
+  }
+
+  protected void executeMigrationJobs() {
+    for (Job migrationJob : getMigrationJobs()) {
+      executeJob(migrationJob);
+    }
   }
 
   protected void executeJob(Job job) {

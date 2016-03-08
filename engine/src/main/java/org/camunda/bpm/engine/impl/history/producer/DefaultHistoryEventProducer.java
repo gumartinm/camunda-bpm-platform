@@ -25,6 +25,7 @@ import org.camunda.bpm.engine.delegate.DelegateTask;
 import org.camunda.bpm.engine.delegate.VariableScope;
 import org.camunda.bpm.engine.history.IncidentState;
 import org.camunda.bpm.engine.history.JobState;
+import org.camunda.bpm.engine.impl.batch.BatchEntity;
 import org.camunda.bpm.engine.impl.batch.history.HistoricBatchEntity;
 import org.camunda.bpm.engine.impl.cfg.IdGenerator;
 import org.camunda.bpm.engine.impl.cmmn.entity.repository.CaseDefinitionEntity;
@@ -661,27 +662,33 @@ public class DefaultHistoryEventProducer implements HistoryEventProducer {
 
   @Override
   public HistoryEvent createBatchStartEvent(Batch batch) {
-    return createBatchEvent(batch, HistoryEventTypes.BATCH_START);
+    return createBatchEvent((BatchEntity) batch, HistoryEventTypes.BATCH_START);
   }
 
   @Override
   public HistoryEvent createBatchEndEvent(Batch batch) {
-    return createBatchEvent(batch, HistoryEventTypes.BATCH_END);
+    return createBatchEvent((BatchEntity) batch, HistoryEventTypes.BATCH_END);
   }
 
-  protected HistoryEvent createBatchEvent(Batch batch, HistoryEventTypes eventType) {
+  protected HistoryEvent createBatchEvent(BatchEntity batch, HistoryEventTypes eventType) {
     HistoricBatchEntity event = new HistoricBatchEntity();
 
     event.setId(batch.getId());
     event.setType(batch.getType());
     event.setSize(batch.getSize());
+    event.setNumberOfJobsPerSeedJobInvocation(batch.getNumberOfJobsPerSeedJobInvocation());
+    event.setNumberOfInvocationsPerJob(batch.getNumberOfInvocationsPerJob());
+    event.setSeedJobDefinitionId(batch.getSeedJobDefinitionId());
+    event.setExecutionJobDefinitionId(batch.getExecutionJobDefinitionId());
     event.setEventType(eventType.getEventName());
 
     if (HistoryEventTypes.BATCH_START.equals(eventType)) {
       event.setStartTime(ClockUtil.getCurrentTime());
     }
 
-    // TODO: set start and end time depending on event type
+    if (HistoryEventTypes.BATCH_END.equals(eventType)) {
+      event.setEndTime(ClockUtil.getCurrentTime());
+    }
 
     return event;
   }

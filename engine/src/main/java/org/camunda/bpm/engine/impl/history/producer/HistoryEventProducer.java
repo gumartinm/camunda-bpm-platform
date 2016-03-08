@@ -211,6 +211,7 @@ public interface HistoryEventProducer {
   public HistoryEvent createHistoricJobLogDeleteEvt(Job job);
 
   HistoryEvent createBatchStartEvent(Batch batch);
+
   HistoryEvent createBatchEndEvent(Batch batch);
 
 }

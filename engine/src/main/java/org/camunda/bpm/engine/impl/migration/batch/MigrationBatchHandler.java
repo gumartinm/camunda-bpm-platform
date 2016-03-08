@@ -10,14 +10,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.camunda.bpm.engine.impl.migration;
+package org.camunda.bpm.engine.impl.migration.batch;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.camunda.bpm.engine.ProcessEngineException;
@@ -26,11 +26,12 @@ import org.camunda.bpm.engine.impl.batch.BatchHandler;
 import org.camunda.bpm.engine.impl.context.Context;
 import org.camunda.bpm.engine.impl.interceptor.CommandContext;
 import org.camunda.bpm.engine.impl.jobexecutor.JobDeclaration;
-import org.camunda.bpm.engine.impl.migration.MigrationBatchHandler.MigrationBatchConfiguration;
 import org.camunda.bpm.engine.impl.persistence.entity.ByteArrayEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.ByteArrayManager;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.JobDefinitionEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.JobEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.JobManager;
 import org.camunda.bpm.engine.impl.persistence.entity.MessageEntity;
 import org.camunda.bpm.engine.impl.util.IoUtil;
 import org.camunda.bpm.engine.migration.MigrationPlan;
@@ -87,43 +88,75 @@ public class MigrationBatchHandler implements BatchHandler<MigrationBatchConfigu
     }
   }
 
-  @Override
-  public boolean createJobs(BatchEntity batch, int numJobsPerSeedInvocation, int numInvocationsPerJobs) {
+  public void handle(BatchEntity batch) {
     MigrationBatchConfiguration configuration = readConfiguration(batch.getConfigurationBytes());
+    if (!configuration.getProcessInstanceIds().isEmpty()) {
+      // create further jobs
+      boolean done = createJobs(batch, configuration);
+      if (!done) {
+        batch.createSeedJob();
+      }
+      else {
+        batch.createMonitorJob();
+      }
+    }
+    else {
+      // check if batch was finished
+      boolean done = checkJobs(batch);
+      if (!done) {
+        batch.createMonitorJob();
+      }
+      else {
+        batch.delete(false);
+      }
+    }
+  }
+
+  public boolean createJobs(BatchEntity batch, MigrationBatchConfiguration configuration) {
+    CommandContext commandContext = Context.getCommandContext();
+    ByteArrayManager byteArrayManager = commandContext.getByteArrayManager();
+    JobManager jobManager = commandContext.getJobManager();
+
     JobDefinitionEntity jobDefinition = batch.getExecutionJobDefinition();
 
-    List<String> unprocessedProcessInstanceIds = configuration.getProcessInstanceIds();
-    List<JobEntity> jobsCreated = new ArrayList<JobEntity>();
+    List<String> processInstanceIds = configuration.getProcessInstanceIds();
+    MigrationPlan migrationPlan = configuration.getMigrationPlan();
+    int numberOfJobsPerSeedJobInvocation = batch.getNumberOfJobsPerSeedJobInvocation();
+    int numberOfInvocationsPerJob = batch.getNumberOfInvocationsPerJob();
+
+    int numberOfInstancesToProcess = Math.min(numberOfInvocationsPerJob * numberOfJobsPerSeedJobInvocation, processInstanceIds.size());
+    List<String> processInstancesToProcess = processInstanceIds.subList(0, numberOfInstancesToProcess);
+
+    int numberOfJobsToCreate = Math.min(
+      numberOfJobsPerSeedJobInvocation,
+      (int) Math.ceil(processInstanceIds.size() / numberOfInvocationsPerJob)
+    );
 
     // TODO: make list modification most efficient
     // TODO: don't create jobs with empty list of process instance ids
-    while (jobsCreated.size() < numJobsPerSeedInvocation && !unprocessedProcessInstanceIds.isEmpty()) {
-      int numInstancesForJob = Math.min(numInvocationsPerJobs, unprocessedProcessInstanceIds.size());
+    for (int i = 0; i < numberOfJobsToCreate; i++) {
+      int lastJobId = Math.min(numberOfInvocationsPerJob, processInstancesToProcess.size());
+      List<String> idsForJob = processInstancesToProcess.subList(0, lastJobId);
 
-      List<String> idsForJob = new ArrayList<String>();
-      for (int i = 0; i < numInstancesForJob; i++) {
-        idsForJob.add(unprocessedProcessInstanceIds.remove(0));
-      }
-
-      MigrationBatchConfiguration configurationForJob = new MigrationBatchConfiguration();
-      configurationForJob.setMigrationPlan(configuration.getMigrationPlan());
-      configurationForJob.setProcessInstanceIds(idsForJob);
+      MigrationBatchConfiguration jobConfiguration = new MigrationBatchConfiguration();
+      jobConfiguration.setMigrationPlan(migrationPlan);
+      jobConfiguration.setProcessInstanceIds(new ArrayList<String>(idsForJob));
 
       ByteArrayEntity configurationEntity = new ByteArrayEntity();
-      configurationEntity.setBytes(writeConfiguration(configurationForJob));
+      configurationEntity.setBytes(writeConfiguration(jobConfiguration));
       // TODO: setName???
-      Context.getCommandContext().getByteArrayManager().insert(configurationEntity);
+      byteArrayManager.insert(configurationEntity);
 
       MessageEntity jobInstance = JOB_DECLARATION.createJobInstance(configurationEntity);
       jobInstance.setJobDefinition(jobDefinition);
-      jobsCreated.add(jobInstance);
-      Context.getCommandContext().getJobManager().insert(jobInstance);
+      jobManager.insert(jobInstance);
+
+      idsForJob.clear();
     }
 
-    configuration.setProcessInstanceIds(unprocessedProcessInstanceIds);
-    writeConfiguration(configuration);
+    batch.setConfigurationBytes(writeConfiguration(configuration));
 
-    return unprocessedProcessInstanceIds.isEmpty();
+    return processInstanceIds.isEmpty();
   }
 
   @Override
@@ -145,6 +178,14 @@ public class MigrationBatchHandler implements BatchHandler<MigrationBatchConfigu
 
   }
 
+  protected boolean checkJobs(BatchEntity batch) {
+    List<JobEntity> batchJobs = Context.getCommandContext()
+      .getJobManager()
+      .findJobsByJobDefinitionId(batch.getExecutionJobDefinitionId());
+
+    return batchJobs.isEmpty();
+  }
+
   @Override
   public String getType() {
     return TYPE;
@@ -163,34 +204,11 @@ public class MigrationBatchHandler implements BatchHandler<MigrationBatchConfigu
     commandContext
       .getProcessEngineConfiguration()
       .getRuntimeService()
-      .executeMigrationPlan(batchConfiguration.getMigrationPlan(), batchConfiguration.getProcessInstanceIds());
+      .executeMigrationPlan(batchConfiguration.getMigrationPlan())
+        .processInstanceIds(batchConfiguration.getProcessInstanceIds())
+        .execute();
 
     commandContext.getByteArrayManager().delete(configurationEntity);
   }
-
-  public static class MigrationBatchConfiguration implements Serializable {
-
-    private static final long serialVersionUID = 1L;
-
-    protected List<String> processInstanceIds;
-    protected MigrationPlan migrationPlan;
-
-    public List<String> getProcessInstanceIds() {
-      return processInstanceIds;
-    }
-
-    public void setProcessInstanceIds(List<String> processInstanceIds) {
-      this.processInstanceIds = processInstanceIds;
-    }
-
-    public MigrationPlan getMigrationPlan() {
-      return migrationPlan;
-    }
-
-    public void setMigrationPlan(MigrationPlan migrationPlan) {
-      this.migrationPlan = migrationPlan;
-    }
-  }
-
 
 }

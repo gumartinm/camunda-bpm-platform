@@ -12,8 +12,13 @@
  */
 package org.camunda.bpm.engine.impl.batch;
 
+import static org.camunda.bpm.engine.impl.util.EnsureUtil.ensureNotNull;
+
+import org.camunda.bpm.engine.BadUserRequestException;
+import org.camunda.bpm.engine.impl.batch.history.HistoricBatchEntity;
 import org.camunda.bpm.engine.impl.interceptor.Command;
 import org.camunda.bpm.engine.impl.interceptor.CommandContext;
+import org.camunda.bpm.engine.impl.util.EnsureUtil;
 
 /**
  * @author Thorben Lindhauer
@@ -31,9 +36,11 @@ public class DeleteBatchCmd implements Command<Void> {
 
   @Override
   public Void execute(CommandContext commandContext) {
-    BatchEntity batchEntity = commandContext.getBatchManager().findBatchById(batchId);
+    ensureNotNull(BadUserRequestException.class, "Batch id must not be null", "batch id", batchId);
 
-    // TODO: null checks for id and entity
+    BatchEntity batchEntity = commandContext.getBatchManager().findBatchById(batchId);
+    ensureNotNull(BadUserRequestException.class, "Batch for id '" + batchId + "' cannot be found", "batch", batchEntity);
+
     // TODO: check authorizations
 
     batchEntity.delete(cascadeToHistory);

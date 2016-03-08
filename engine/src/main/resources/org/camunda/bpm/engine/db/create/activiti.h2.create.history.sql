@@ -224,6 +224,10 @@ create table ACT_HI_BATCH (
     REV_ integer,
     TYPE_ varchar(255),
     SIZE_ integer,
+    JOBS_PER_SEED_ integer,
+    INVOCATION_PER_JOB_ integer,
+    SEED_JOB_DEF_ID_ varchar(255),
+    EXECUTION_JOB_DEF_ID_ varchar(255),
     START_TIME_ timestamp not null,
     END_TIME_ timestamp,
     primary key (ID_)

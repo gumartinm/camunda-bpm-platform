@@ -208,4 +208,9 @@ public interface HistoryService {
    */
   HistoricProcessInstanceReport createHistoricProcessInstanceReport();
 
+  /**
+   * Deletes a historic batch instance. All corresponding historic job logs are deleted as well;
+   */
+  void deleteHistoricBatch(String id);
+
 }

@@ -26,6 +26,10 @@ public interface HistoricBatch {
 
   int getSize();
 
+  int getNumberOfInvocationsPerJob();
+
+  int getNumberOfJobsPerSeedJobInvocation();
+
   Date getStartTime();
 
   Date getEndTime();

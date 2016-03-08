@@ -15,6 +15,7 @@ package org.camunda.bpm.engine.impl.batch;
 import org.camunda.bpm.engine.impl.interceptor.CommandContext;
 import org.camunda.bpm.engine.impl.jobexecutor.JobHandler;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
+import org.camunda.bpm.engine.impl.util.EnsureUtil;
 
 /**
  * @author Thorben Lindhauer
@@ -30,24 +31,16 @@ public class BatchSeedJobHandler implements JobHandler {
   }
 
   @Override
-  public void execute(String configuration, ExecutionEntity execution, CommandContext commandContext, String tenantId) {
-
-    // TODO: null check?
-    BatchEntity batch = commandContext.getBatchManager().findBatchById(configuration);
+  public void execute(String batchId, ExecutionEntity execution, CommandContext commandContext, String tenantId) {
+    BatchEntity batch = commandContext.getBatchManager().findBatchById(batchId);
+    EnsureUtil.ensureNotNull("Batch with id '" + batchId + "' cannot be found", "batch", batch);
 
     BatchHandler<?> batchHandler = commandContext
         .getProcessEngineConfiguration()
         .getBatchHandler(batch.getType());
 
-    // TODO: move to process engine configuration
-    int numJobsPerSeedInvocation = 10;
-    int numInvocationsPerJobs = 1;
-
-    boolean done = batchHandler.createJobs(batch, numJobsPerSeedInvocation, numInvocationsPerJobs);
-
-    if (!done) {
-      batch.createSeedJob();
-    }
+    batchHandler.handle(batch);
   }
+
 
 }

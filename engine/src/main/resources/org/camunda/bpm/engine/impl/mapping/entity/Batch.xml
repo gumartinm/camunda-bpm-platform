@@ -12,9 +12,11 @@
       ID_,
       TYPE_,
       SIZE_,
-      CONFIGURATION_,
+      JOBS_PER_SEED_,
+      INVOCATION_PER_JOB_,
       SEED_JOB_DEF_ID_,
       EXECUTION_JOB_DEF_ID_,
+      CONFIGURATION_,
       REV_
     )
     values
@@ -22,9 +24,11 @@
       #{id ,jdbcType=VARCHAR},
       #{type, jdbcType=VARCHAR},
       #{size, jdbcType=INTEGER},
-      #{configuration ,jdbcType=VARCHAR},
+      #{numberOfJobsPerSeedJobInvocation, jdbcType=INTEGER},
+      #{numberOfInvocationsPerJob, jdbcType=INTEGER},
       #{seedJobDefinitionId, jdbcType=VARCHAR},
       #{executionJobDefinitionId, jdbcType=VARCHAR},
+      #{configuration ,jdbcType=VARCHAR},
       1
     )
   </insert>
@@ -36,9 +40,11 @@
     <result property="revision" column="REV_" jdbcType="INTEGER" />
     <result property="type" column="TYPE_" jdbcType="VARCHAR" />
     <result property="size" column="SIZE_" jdbcType="INTEGER" />
-    <result property="configuration" column="CONFIGURATION_" jdbcType="VARCHAR" />
+    <result property="numberOfJobsPerSeedJobInvocation" column="JOBS_PER_SEED_" jdbcType="INTEGER" />
+    <result property="numberOfInvocationsPerJob" column="INVOCATION_PER_JOB_" jdbcType="INTEGER" />
     <result property="seedJobDefinitionId" column="SEED_JOB_DEF_ID_" jdbcType="VARCHAR" />
     <result property="executionJobDefinitionId" column="EXECUTION_JOB_DEF_ID_" jdbcType="VARCHAR" />
+    <result property="configuration" column="CONFIGURATION_" jdbcType="VARCHAR" />
   </resultMap>
   
   <!-- SELECT -->

@@ -13,14 +13,35 @@
 package org.camunda.bpm.engine.batch;
 
 /**
- * @author Thorben Lindhauer
+ * A batch represents a number of jobs which
+ * are used to execute a number of invocations
+ * asynchronously.
  *
  */
 public interface Batch {
 
+  /**
+   * @return the id of the batch
+   */
   String getId();
 
+  /**
+   * @return the type of the batch
+   */
   String getType();
 
+  /**
+   * @return the number of invocations executed by the batch
+   */
   int getSize();
+
+  /**
+   * @return number of batch jobs created per batch seed job invocation
+   */
+  int getNumberOfJobsPerSeedJobInvocation();
+
+  /**
+   * @return the number of invocations executed per batch job
+   */
+  int getNumberOfInvocationsPerJob();
 }

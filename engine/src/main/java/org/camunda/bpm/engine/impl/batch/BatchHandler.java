@@ -29,10 +29,8 @@ public interface BatchHandler<T> extends JobHandler {
 
   JobDeclaration<?, MessageEntity> getJobDeclaration();
 
-  /**
-   * Returns true if more jobs need to be created to complete the batch
-   */
-  boolean createJobs(BatchEntity batch, int numJobsPerSeedInvocation, int numInvocationsPerJobs);
-
   void deleteJobs(BatchEntity batch);
+
+  void handle(BatchEntity batch);
+
 }

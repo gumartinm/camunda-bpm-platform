@@ -65,7 +65,7 @@ public class BatchMigrationHistoryTest {
         .mapEqualActivities()
         .build();
 
-    batch = rule.getRuntimeService().executeMigrationPlanAsync(migrationPlan, processInstanceIds);
+    batch = rule.getRuntimeService().executeMigrationPlan(migrationPlan).processInstanceIds(processInstanceIds).executeAsync();
 
     // when
     HistoricBatch historicBatch = rule.getHistoryService().createHistoricBatchQuery().singleResult();

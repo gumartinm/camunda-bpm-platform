@@ -17,9 +17,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.camunda.bpm.engine.batch.history.HistoricBatch;
+import org.camunda.bpm.engine.impl.context.Context;
 import org.camunda.bpm.engine.impl.db.DbEntity;
 import org.camunda.bpm.engine.impl.db.HasDbRevision;
 import org.camunda.bpm.engine.impl.history.event.HistoryEvent;
+import org.camunda.bpm.engine.impl.interceptor.CommandContext;
+import org.camunda.bpm.engine.impl.persistence.entity.HistoricJobLogManager;
 
 /**
  * @author Thorben Lindhauer
@@ -32,14 +35,12 @@ public class HistoricBatchEntity extends HistoryEvent implements HistoricBatch, 
   protected String id;
   protected String type;
   protected int size;
+  protected int numberOfJobsPerSeedJobInvocation;
+  protected int numberOfInvocationsPerJob;
+  protected String seedJobDefinitionId;
+  protected String executionJobDefinitionId;
   protected Date startTime;
   protected Date endTime;
-
-  @Override
-  public void setId(String id) {
-    this.id = id;
-
-  }
 
   @Override
   public Object getPersistentState() {
@@ -50,27 +51,50 @@ public class HistoricBatchEntity extends HistoryEvent implements HistoricBatch, 
     return persistentState;
   }
 
-  @Override
-  public String getId() {
-    return id;
-  }
-
-  @Override
   public String getType() {
     return type;
   }
 
-  @Override
   public int getSize() {
     return size;
   }
 
-  @Override
+  public int getNumberOfInvocationsPerJob() {
+    return numberOfInvocationsPerJob;
+  }
+
+  public void setNumberOfInvocationsPerJob(int numberOfInvocationsPerJob) {
+    this.numberOfInvocationsPerJob = numberOfInvocationsPerJob;
+  }
+
+  public int getNumberOfJobsPerSeedJobInvocation() {
+    return numberOfJobsPerSeedJobInvocation;
+  }
+
+  public void setNumberOfJobsPerSeedJobInvocation(int numberOfJobsPerSeedJobInvocation) {
+    this.numberOfJobsPerSeedJobInvocation = numberOfJobsPerSeedJobInvocation;
+  }
+
+  public String getSeedJobDefinitionId() {
+    return seedJobDefinitionId;
+  }
+
+  public void setSeedJobDefinitionId(String seedJobDefinitionId) {
+    this.seedJobDefinitionId = seedJobDefinitionId;
+  }
+
+  public String getExecutionJobDefinitionId() {
+    return executionJobDefinitionId;
+  }
+
+  public void setExecutionJobDefinitionId(String executionJobDefinitionId) {
+    this.executionJobDefinitionId = executionJobDefinitionId;
+  }
+
   public Date getStartTime() {
     return startTime;
   }
 
-  @Override
   public Date getEndTime() {
     return endTime;
   }
@@ -89,6 +113,14 @@ public class HistoricBatchEntity extends HistoryEvent implements HistoricBatch, 
 
   public void setEndTime(Date endTime) {
     this.endTime = endTime;
+  }
+
+  public void delete() {
+    CommandContext commandContext = Context.getCommandContext();
+    HistoricJobLogManager historicJobLogManager = commandContext.getHistoricJobLogManager();
+    historicJobLogManager.deleteHistoricJobLogsByJobDefinitionId(seedJobDefinitionId);
+    historicJobLogManager.deleteHistoricJobLogsByJobDefinitionId(executionJobDefinitionId);
+    commandContext.getHistoricBatchManager().delete(this);
   }
 
 }

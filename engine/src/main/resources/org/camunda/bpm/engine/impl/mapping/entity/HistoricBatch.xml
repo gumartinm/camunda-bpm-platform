@@ -12,6 +12,10 @@
       ID_,
       TYPE_,
       SIZE_,
+      JOBS_PER_SEED_,
+      INVOCATION_PER_JOB_,
+      SEED_JOB_DEF_ID_,
+      EXECUTION_JOB_DEF_ID_,
       START_TIME_,
       END_TIME_
     )
@@ -20,11 +24,29 @@
       #{id ,jdbcType=VARCHAR},
       #{type, jdbcType=VARCHAR},
       #{size, jdbcType=INTEGER},
+      #{numberOfJobsPerSeedJobInvocation, jdbcType=INTEGER},
+      #{numberOfInvocationsPerJob, jdbcType=INTEGER},
+      #{seedJobDefinitionId, jdbcType=VARCHAR},
+      #{executionJobDefinitionId, jdbcType=VARCHAR},
       #{startTime, jdbcType=TIMESTAMP},
       #{endTime, jdbcType=TIMESTAMP}
     )
   </insert>
-  
+
+  <!-- RESULTMAP -->
+
+  <resultMap id="historicBatchResultMap" type="org.camunda.bpm.engine.impl.batch.history.HistoricBatchEntity">
+    <id property="id" column="ID_" jdbcType="VARCHAR" />
+    <result property="type" column="TYPE_" jdbcType="VARCHAR" />
+    <result property="size" column="SIZE_" jdbcType="INTEGER" />
+    <result property="numberOfJobsPerSeedJobInvocation" column="JOBS_PER_SEED_" jdbcType="INTEGER" />
+    <result property="numberOfInvocationsPerJob" column="INVOCATION_PER_JOB_" jdbcType="INTEGER" />
+    <result property="seedJobDefinitionId" column="SEED_JOB_DEF_ID_" jdbcType="VARCHAR" />
+    <result property="executionJobDefinitionId" column="EXECUTION_JOB_DEF_ID_" jdbcType="VARCHAR" />
+    <result property="startTime" column="START_TIME_" jdbcType="TIMESTAMP" />
+    <result property="endTime" column="END_TIME_" jdbcType="TIMESTAMP" />
+  </resultMap>
+
   <!-- DELETE -->
 
   <delete id="deleteHistoricBatch" parameterType="org.camunda.bpm.engine.impl.batch.history.HistoricBatchEntity">
@@ -45,25 +67,12 @@
     </set>
     where ID_= #{id, jdbcType=VARCHAR}
   </update>
-  
-  
+
   <!-- SELECT -->
   <select id="selectHistoricBatch" parameterType="string" resultMap="historicBatchResultMap">
     select * from ${prefix}ACT_HI_BATCH where ID_ = #{id}
   </select>
 
-  <!-- RESULTMAP -->
-
-  <resultMap id="historicBatchResultMap" type="org.camunda.bpm.engine.impl.batch.history.HistoricBatchEntity">
-    <id property="id" column="ID_" jdbcType="VARCHAR" />
-    <result property="type" column="TYPE_" jdbcType="VARCHAR" />
-    <result property="size" column="SIZE_" jdbcType="INTEGER" />
-    <result property="startTime" column="START_TIME_" jdbcType="TIMESTAMP" />
-    <result property="endTime" column="END_TIME_" jdbcType="TIMESTAMP" />
-  </resultMap>
-  
-  <!-- QUERIES -->
-  
   <select id="selectHistoricBatchesByQueryCriteria" parameterType="org.camunda.bpm.engine.impl.batch.history.HistoricBatchQueryImpl" resultMap="historicBatchResultMap">
     <include refid="org.camunda.bpm.engine.impl.persistence.entity.Commons.bindOrderBy"/>
     ${limitBefore}

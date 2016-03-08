@@ -12,6 +12,7 @@
  */
 package org.camunda.bpm.engine.impl.batch;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
@@ -19,11 +20,14 @@ import org.camunda.bpm.engine.batch.Batch;
 import org.camunda.bpm.engine.impl.context.Context;
 import org.camunda.bpm.engine.impl.db.DbEntity;
 import org.camunda.bpm.engine.impl.db.HasDbRevision;
-import org.camunda.bpm.engine.impl.history.event.HistoryEvent;
+import org.camunda.bpm.engine.impl.interceptor.CommandContext;
+import org.camunda.bpm.engine.impl.persistence.entity.HistoricJobLogManager;
 import org.camunda.bpm.engine.impl.persistence.entity.JobDefinitionEntity;
+import org.camunda.bpm.engine.impl.persistence.entity.JobDefinitionManager;
 import org.camunda.bpm.engine.impl.persistence.entity.JobEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.Nameable;
 import org.camunda.bpm.engine.impl.persistence.entity.util.ByteArrayField;
+import org.camunda.bpm.engine.impl.util.ClockUtil;
 
 /**
  * @author Thorben Lindhauer
@@ -31,17 +35,18 @@ import org.camunda.bpm.engine.impl.persistence.entity.util.ByteArrayField;
  */
 public class BatchEntity implements Batch, DbEntity, Nameable, HasDbRevision {
 
-  public static final BatchSeedJobDeclaration BATCH_JOB_DECLARATION = new BatchSeedJobDeclaration();
+  public static final BatchSeedJobDeclaration BATCH_SEED_JOB_DECLARATION = new BatchSeedJobDeclaration();
 
   // persistent
   protected String id;
   protected String type;
   protected int size;
-  protected int revision;
+  protected int numberOfJobsPerSeedJobInvocation;
+  protected int numberOfInvocationsPerJob;
   protected String seedJobDefinitionId;
   protected String executionJobDefinitionId;
-
   protected ByteArrayField configuration = new ByteArrayField(this);
+  protected int revision;
 
   // transient
   protected JobDefinitionEntity seedJobDefinition;
@@ -70,6 +75,22 @@ public class BatchEntity implements Batch, DbEntity, Nameable, HasDbRevision {
 
   public void setSize(int size) {
     this.size = size;
+  }
+
+  public int getNumberOfInvocationsPerJob() {
+    return numberOfInvocationsPerJob;
+  }
+
+  public void setNumberOfInvocationsPerJob(int numberOfInvocationsPerJob) {
+    this.numberOfInvocationsPerJob = numberOfInvocationsPerJob;
+  }
+
+  public int getNumberOfJobsPerSeedJobInvocation() {
+    return numberOfJobsPerSeedJobInvocation;
+  }
+
+  public void setNumberOfJobsPerSeedJobInvocation(int numberOfJobsPerSeedJobInvocation) {
+    this.numberOfJobsPerSeedJobInvocation = numberOfJobsPerSeedJobInvocation;
   }
 
   public String getSeedJobDefinitionId() {
@@ -142,7 +163,7 @@ public class BatchEntity implements Batch, DbEntity, Nameable, HasDbRevision {
   }
 
   public JobDefinitionEntity createSeedJobDefinition() {
-    seedJobDefinition = new JobDefinitionEntity(BATCH_JOB_DECLARATION);
+    seedJobDefinition = new JobDefinitionEntity(BATCH_SEED_JOB_DECLARATION);
     seedJobDefinition.setJobConfiguration(id);
 
     Context.getCommandContext().getJobDefinitionManager().insert(seedJobDefinition);
@@ -165,7 +186,7 @@ public class BatchEntity implements Batch, DbEntity, Nameable, HasDbRevision {
   }
 
   public JobEntity createSeedJob() {
-    JobEntity seedJob = BATCH_JOB_DECLARATION.createJobInstance(this);
+    JobEntity seedJob = BATCH_SEED_JOB_DECLARATION.createJobInstance(this);
 
     Context.getCommandContext().getJobManager().insert(seedJob);
 
@@ -184,49 +205,52 @@ public class BatchEntity implements Batch, DbEntity, Nameable, HasDbRevision {
     }
   }
 
+  public JobEntity createMonitorJob() {
+    CommandContext commandContext = Context.getCommandContext();
+    int pollTime = commandContext.getProcessEngineConfiguration().getBatchCompletionPollWaitTime() * 1000;
+    Date dueDate = new Date(ClockUtil.getCurrentTime().getTime() + pollTime);
+
+    // Maybe use an other job declaration
+    JobEntity monitorJob = BATCH_SEED_JOB_DECLARATION.createJobInstance(this);
+    monitorJob.setDuedate(dueDate);
+
+    commandContext.getJobManager().insertJob(monitorJob);
+    return monitorJob;
+  }
+
   public void delete(boolean cascadeToHistory) {
+    CommandContext commandContext = Context.getCommandContext();
+
     deleteSeedJob();
     getBatchHandler().deleteJobs(this);
-    Context.getCommandContext().getBatchManager().delete(this);
+    commandContext.getBatchManager().delete(this);
     configuration.deleteByteArrayValue();
+
+    JobDefinitionManager jobDefinitionManager = commandContext.getJobDefinitionManager();
+    jobDefinitionManager.delete(getSeedJobDefinition());
+    jobDefinitionManager.delete(getExecutionJobDefinition());
 
     fireHistoricEndEvent();
 
     if (cascadeToHistory) {
-      Context.getCommandContext().getHistoricJobLogManager().deleteHistoricJobLogsByJobDefinitionId(seedJobDefinitionId);
-      Context.getCommandContext().getHistoricJobLogManager().deleteHistoricJobLogsByJobDefinitionId(executionJobDefinitionId);
+      HistoricJobLogManager historicJobLogManager = commandContext.getHistoricJobLogManager();
+      historicJobLogManager.deleteHistoricJobLogsByJobDefinitionId(seedJobDefinitionId);
+      historicJobLogManager.deleteHistoricJobLogsByJobDefinitionId(executionJobDefinitionId);
 
-      Context.getCommandContext().getJobDefinitionManager().delete(getSeedJobDefinition());
-      Context.getCommandContext().getJobDefinitionManager().delete(getExecutionJobDefinition());
-
-      Context.getCommandContext().getHistoricBatchManager().deleteHistoricBatchById(id);
-      // TODO: delete historic batch entity
+      commandContext.getHistoricBatchManager().deleteHistoricBatchById(id);
     }
   }
 
   public void fireHistoricStartEvent() {
-    HistoryEvent historyEvent = Context.getCommandContext()
-      .getProcessEngineConfiguration()
-      .getHistoryEventProducer()
-      .createBatchStartEvent(this);
-
     Context.getCommandContext()
-      .getProcessEngineConfiguration()
-      .getHistoryEventHandler()
-      .handleEvent(historyEvent);
-
+      .getHistoricBatchManager()
+      .createHistoricBatch(this);
   }
 
   public void fireHistoricEndEvent() {
-    HistoryEvent historyEvent = Context.getCommandContext()
-      .getProcessEngineConfiguration()
-      .getHistoryEventProducer()
-      .createBatchEndEvent(this);
-
     Context.getCommandContext()
-      .getProcessEngineConfiguration()
-      .getHistoryEventHandler()
-      .handleEvent(historyEvent);
+      .getHistoricBatchManager()
+      .completeHistoricBatch(this);
   }
 
   @Override
@@ -240,9 +264,23 @@ public class BatchEntity implements Batch, DbEntity, Nameable, HasDbRevision {
     return revision;
   }
 
+
   @Override
   public int getRevisionNext() {
     return revision + 1;
   }
 
+  public String toString() {
+    return "BatchEntity{" +
+      "batchHandler=" + batchHandler +
+      ", id='" + id + '\'' +
+      ", type='" + type + '\'' +
+      ", size=" + size +
+      ", numberOfJobsPerSeedJobInvocation=" + numberOfJobsPerSeedJobInvocation +
+      ", numberOfInvocationsPerJob=" + numberOfInvocationsPerJob +
+      ", seedJobDefinitionId='" + seedJobDefinitionId + '\'' +
+      ", executionJobDefinitionId='" + executionJobDefinitionId + '\'' +
+      ", configurationId='" + configuration.getByteArrayId() + '\'' +
+      '}';
+  }
 }

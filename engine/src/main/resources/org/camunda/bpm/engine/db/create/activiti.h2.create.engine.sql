@@ -262,9 +262,11 @@ create table ACT_RU_BATCH (
   REV_ integer,
   TYPE_ varchar(255),
   SIZE_ integer,
-  CONFIGURATION_ varchar(255),
+  JOBS_PER_SEED_ integer,
+  INVOCATION_PER_JOB_ integer,
   SEED_JOB_DEF_ID_ varchar(255), -- TODO: foreign key?
   EXECUTION_JOB_DEF_ID_ varchar(255), -- TODO: foreign key?
+  CONFIGURATION_ varchar(255),
   primary key (ID_)
 );
 
